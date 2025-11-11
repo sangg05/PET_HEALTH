@@ -1,4 +1,4 @@
-package com.example.pet_health.data.model
+package com.example.pet_health.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -8,7 +8,7 @@ import androidx.room.Index
     tableName = "reminders",
     foreignKeys = [
         ForeignKey(
-            entity = Pet::class,
+            entity = PetEntity::class,
             parentColumns = ["petId"],
             childColumns = ["petId"],
             onDelete = ForeignKey.CASCADE
@@ -16,7 +16,7 @@ import androidx.room.Index
     ],
     indices = [Index("petId")]
 )
-data class Reminder(
+data class ReminderEntity(
     @PrimaryKey val reminderId: String,
     val petId: String,
     val type: String, // tiêm phòng, tái khám, tẩy giun

@@ -1,11 +1,10 @@
-package com.example.pet_health.data.model
+package com.example.pet_health.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ForeignKey
-import androidx.room.Index
+
 @Entity(tableName = "users")
-data class User(
+data class UserEntity(
     @PrimaryKey val userId: String,
     val name: String,
     val email: String,

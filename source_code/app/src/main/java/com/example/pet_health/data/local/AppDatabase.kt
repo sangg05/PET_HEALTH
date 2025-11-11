@@ -3,17 +3,17 @@ package pet_health.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import pet_health.data.local.dao.*
-import com.example.pet_health.data.model.*
+import com.example.pet_health.data.entity.*
 
 @Database(
     entities = [
-        User::class,
-        Pet::class,
-        HealthRecord::class,
-        Reminder::class,
-        Vaccine::class,
-        UserActivityLog::class,
-        PetImage::class,
+        UserEntity::class,
+        PetEntity::class,
+        HealthRecordEntity::class,
+        ReminderEntity::class,
+        VaccineEntity::class,
+        UserActivityLogEntity::class,
+        PetImageEntity::class,
     ],
     version = 1,
     exportSchema = true

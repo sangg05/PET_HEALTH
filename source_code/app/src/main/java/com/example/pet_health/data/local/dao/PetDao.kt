@@ -1,23 +1,23 @@
 package pet_health.data.local.dao
 
 import androidx.room.*
-import com.example.pet_health.data.model.Pet
+import com.example.pet_health.data.entity.PetEntity
 
 @Dao
 interface PetDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPet(pet: Pet)
+    suspend fun insertPet(petEntity: PetEntity)
 
     @Query("SELECT * FROM pets WHERE userId = :userId")
-    suspend fun getPetsByUser(userId: String): List<Pet>
+    suspend fun getPetsByUser(userId: String): List<PetEntity>
 
     @Query("SELECT * FROM pets WHERE petId = :id")
-    suspend fun getPet(id: String): Pet?
+    suspend fun getPet(id: String): PetEntity?
 
     @Update
-    suspend fun updatePet(pet: Pet)
+    suspend fun updatePet(petEntity: PetEntity)
 
     @Delete
-    suspend fun deletePet(pet: Pet)
+    suspend fun deletePet(petEntity: PetEntity)
 }
