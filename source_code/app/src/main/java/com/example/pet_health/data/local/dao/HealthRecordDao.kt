@@ -1,7 +1,8 @@
 package pet_health.data.local.dao
 
 import androidx.room.*
-import pet_health.data.model.HealthRecord
+import com.example.pet_health.data.model.HealthRecord
+
 
 @Dao
 interface HealthRecordDao {

@@ -1,7 +1,7 @@
 package pet_health.data.local.datasources
 
 import pet_health.data.local.dao.*
-import pet_health.data.model.*
+import com.example.pet_health.data.model.*
 
 class PetLocalDataSource(
     private val userDao: UserDao,

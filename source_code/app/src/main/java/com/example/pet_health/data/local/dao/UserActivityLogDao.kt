@@ -1,7 +1,7 @@
 package pet_health.data.local.dao
 
 import androidx.room.*
-import pet_health.data.model.UserActivityLog
+import com.example.pet_health.data.model.UserActivityLog
 
 @Dao
 interface UserActivityLogDao {

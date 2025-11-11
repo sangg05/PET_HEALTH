@@ -2,7 +2,14 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
+
+
 }
+val roomVersion = "2.6.0"
+val hiltVersion = "2.48"
+val retrofitVersion = "2.9.0"
 
 android {
     namespace = "com.example.pet_health"
@@ -56,4 +63,19 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.10.0")
+    // Room
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
+    testImplementation("androidx.room:room-testing:$roomVersion")
+
+    // Hilt
+    implementation("com.google.dagger:hilt-android:$hiltVersion")
+    kapt("com.google.dagger:hilt-compiler:$hiltVersion")
+
+    implementation("com.squareup.retrofit2:retrofit:${retrofitVersion}")
+    implementation("com.squareup.retrofit2:converter-gson:${retrofitVersion}")
 }

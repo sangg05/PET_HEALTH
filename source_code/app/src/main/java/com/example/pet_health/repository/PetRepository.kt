@@ -1,7 +1,7 @@
 package pet_health.repository
 
 import pet_health.data.local.datasources.PetLocalDataSource
-import pet_health.data.model.*
+import com.example.pet_health.data.model.*
 
 class PetRepository(
     private val local: PetLocalDataSource

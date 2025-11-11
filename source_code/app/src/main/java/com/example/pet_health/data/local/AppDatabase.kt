@@ -3,7 +3,7 @@ package pet_health.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import pet_health.data.local.dao.*
-import pet_health.data.model.*
+import com.example.pet_health.data.model.*
 
 @Database(
     entities = [
