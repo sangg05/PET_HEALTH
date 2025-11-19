@@ -18,8 +18,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -48,26 +50,23 @@ val darkPink = Color(0xFFD896D8)
 @Composable
 fun FilterTab(
     text: String,
-    isSelected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) AccentColor else White
-    val contentColor = if (isSelected) White else AccentColor
-
     Box(
-        modifier = Modifier
-            .padding(horizontal = 4.dp)
+        modifier = modifier
+            .padding(horizontal = 6.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(backgroundColor)
+            .background(Color.White)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = contentColor,
-            fontWeight = FontWeight.SemiBold,
-            style = MaterialTheme.typography.bodyMedium
+            color = Color(0xFF7A5FA7),
+            fontWeight = FontWeight.Medium,
+            fontSize = 15.sp
         )
     }
 }
@@ -89,9 +88,28 @@ fun RecordItem(record: WeightHeightRecord) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(record.date, color = TextDark, modifier = Modifier.weight(1f))
-            Text(record.weight, color = TextDark, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Text(record.height, color = TextDark, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+            Text(
+                record.date,
+                color = TextDark,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                record.weight,
+                color = TextDark,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                record.height,
+                color = TextDark,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -237,12 +255,23 @@ fun WeightHeightScreen() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.Start
+                    .padding(horizontal = 15.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                FilterTab(text = "Ngày", isSelected = selectedTab == "Ngày") { selectedTab = "Ngày" }
-                FilterTab(text = "Cân nặng", isSelected = selectedTab == "Cân nặng") { selectedTab = "Cân nặng" }
-                FilterTab(text = "Chiều Cao", isSelected = selectedTab == "Chiều Cao") { selectedTab = "Chiều Cao" }
+                FilterTab(
+                    text = "Ngày",
+                    modifier = Modifier.weight(1f)
+                ) { selectedTab = "Ngày" }
+
+                FilterTab(
+                    text = "Cân nặng",
+                    modifier = Modifier.weight(1f)
+                ) { selectedTab = "Cân nặng" }
+
+                FilterTab(
+                    text = "Chiều Cao",
+                    modifier = Modifier.weight(1f)
+                ) { selectedTab = "Chiều Cao" }
             }
 
             // --- Danh sách dữ liệu ---
