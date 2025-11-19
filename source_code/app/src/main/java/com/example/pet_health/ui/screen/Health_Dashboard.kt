@@ -17,6 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.flowlayout.FlowRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.alpha
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,35 +37,66 @@ fun HealthTrackingScreen() {
     val categoriesExpanded = listOf("Cọp", "Đâu", "Mỳ Lem")
     val allCategories = if (isExpanded) categoriesCollapsed + categoriesExpanded else categoriesCollapsed
 
+    val scrollState = rememberScrollState() // Scroll state cho Column
+
+    var showForm by remember { mutableStateOf(false) }
+    var newWeight by remember { mutableStateOf("") }
+    var newHeight by remember { mutableStateOf("") }
+
+    var currentWeight by remember { mutableStateOf("5.2 kg") }
+    var currentHeight by remember { mutableStateOf("35 cm") }
+
+    var showForm2 by remember { mutableStateOf(false) }
+    var newSymptomName by remember { mutableStateOf("") }
+    var newSymptomDesc by remember { mutableStateOf("") }
+    var newSymptomDate by remember { mutableStateOf("") }
+    var newSymptomTime by remember { mutableStateOf("") }
+
+
+    var symptoms by remember {
+        mutableStateOf(
+            listOf(
+                "Nôn mửa" to "Ngày: 10/11/2025 Giờ: 08:00 Mô Tả: Nôn ra thức ăn",
+                "Sốt cao" to "Ngày: 11/11/2025 Giờ: 12:00 Mô Tả: 39°C",
+                "Ho nhiều" to "Ngày: 12/11/2025 Giờ: 15:00 Mô Tả: Ho khan"
+            )
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        "Sức khỏe của tên",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                },
+                title = { Text("Sức khỏe của tên", fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { /* Navigate back */ }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = darkPink)
             )
+        },
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(White),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = AccentColor, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+            }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState) // cho phép cuộn
                 .background(lightPink)
                 .padding(paddingValues)
                 .padding(16.dp)
+                .alpha(if (showForm || showForm2) 0.3f else 1f)
         ) {
 
             // --- Categories row ---
@@ -161,11 +197,14 @@ fun HealthTrackingScreen() {
                     println("Đi tới chi tiết kích thước")
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
             // --- Add button ---
             Button(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth(),
+                onClick = { showForm = true },
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .align(Alignment.CenterHorizontally),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp)
             ) {
@@ -186,84 +225,170 @@ fun HealthTrackingScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             // --- Symptoms section ---
+
             Text(
                 "Nhật ký triệu chứng bất thường:",
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+                fontSize = 18.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        "Nôn mửa",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Ngày: Giờ: Mô Tả",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                symptoms.forEach { (name, description) ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                description,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // --- Add symptom button ---
-            IconButton(
-                onClick = { },
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(Color(0xFF00AA00), CircleShape)
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(lightPink)
+                .padding(16.dp) // padding tổng thể
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Add symptom",
-                    tint = Color.White
-                )
+                // --- Add symptom button ở ---
+                IconButton(
+                    onClick = { showForm2 = true },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(Color(0xFF00AA00), CircleShape)
+                        .align(Alignment.Center) // căn giữa Box
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add symptom",
+                        tint = Color.White
+                    )
+                }
+
+                // --- Bottom navigation ở dưới ---
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // --- Bottom navigation ---
-            Row(
+        }
+        if (showForm) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { showForm = false }, // nhấn ngoài để đóng
+                contentAlignment = Alignment.Center
             ) {
-                IconButton(onClick = { }) {
-                    Icon(
-                        Icons.Default.Home,
-                        contentDescription = "Home",
-                        tint = Color(0xFF4DB8E8),
-                        modifier = Modifier.size(32.dp)
-                    )
+                Card(
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Cập nhật dữ liệu", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = newWeight,
+                            onValueChange = { newWeight = it },
+                            label = { Text("Cân nặng (kg)") }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = newHeight,
+                            onValueChange = { newHeight = it },
+                            label = { Text("Chiều cao (cm)") }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Button(onClick = { showForm = false }) { Text("Hủy") }
+                            Button(onClick = {
+                                if (newWeight.isNotBlank()) currentWeight = "${newWeight.trim()} kg"
+                                if (newHeight.isNotBlank()) currentHeight = "${newHeight.trim()} cm"
+                                showForm = false
+                            }) { Text("Lưu") }
+                        }
+                    }
                 }
-                IconButton(onClick = { }) {
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = "Notifications",
-                        tint = Color(0xFFFFCC00),
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-                IconButton(onClick = { }) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = Color(0xFF4DB8E8),
-                        modifier = Modifier.size(32.dp)
-                    )
+            }
+        }
+        if (showForm2) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { showForm2 = false },
+                contentAlignment = Alignment.Center
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(0.85f),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Thêm triệu chứng", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+
+                        OutlinedTextField(
+                            value = newSymptomName,
+                            onValueChange = { newSymptomName = it },
+                            label = { Text("Tên triệu chứng") },
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = newSymptomTime,
+                            onValueChange = { newSymptomTime = it },
+                            label = { Text("Giờ (HH:mm)") },
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = newSymptomDesc,
+                            onValueChange = { newSymptomDesc = it },
+                            label = { Text("Mô tả") },
+                            singleLine = false,
+                            maxLines = 3
+                        )
+
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Button(onClick = { showForm2 = false }) {
+                                Text("Hủy")
+                            }
+                            Button(onClick = {
+                                if (newSymptomName.isNotBlank() && newSymptomDesc.isNotBlank()) {
+                                    symptoms = symptoms + (newSymptomName to newSymptomDesc)
+                                    newSymptomName = ""
+                                    newSymptomDesc = ""
+                                    showForm2 = false
+                                }
+                            }) {
+                                Text("Lưu")
+                            }
+                        }
+                    }
                 }
             }
         }

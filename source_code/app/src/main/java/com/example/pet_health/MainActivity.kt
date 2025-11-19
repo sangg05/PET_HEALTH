@@ -31,7 +31,6 @@ class MainActivity : ComponentActivity() {
             NavHost(navController = navController, startDestination = "home") {
                 composable("home") { HomeScreen(navController) }
                 composable("health_tracking") { HealthTrackingScreen() }
-                composable("weight_height") { WeightHeightScreen() }
 
             }
         }
