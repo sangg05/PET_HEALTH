@@ -4,10 +4,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pet_health.data.entity.PetEntity
+import com.example.pet_health.data.entity.SymptomLogEntity
 import com.example.pet_health.data.entity.UserEntity
 import com.example.pet_health.repository.PetRepository
 import kotlinx.coroutines.launch
-
 
 class PetViewModel(private val repository: PetRepository) : ViewModel() {
 
@@ -19,9 +19,14 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
 
     var isExpanded = mutableStateOf(false)
         private set
+    var symptomMap = mutableStateOf<Map<String, List<SymptomLogEntity>>>(emptyMap())
+        private set
+
 
     init {
         prepopulateData()
+        prepopulateSymptoms()
+
     }
 
     private fun prepopulateData() {
@@ -107,6 +112,33 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
         pets.value = petList
     }
 
+    // Tạo triệu chứng mẫu cho từng pet
+    private fun prepopulateSymptoms() {
+        val map = mutableMapOf<String, List<SymptomLogEntity>>()
+
+        pets.value.forEach { pet ->
+            val list = when (pet.petId) {
+                "p1" -> listOf(
+                    SymptomLogEntity("s1", pet.petId, "Ho nhẹ", "Ho vào buổi sáng 2 lần", System.currentTimeMillis() - 86_400_000),
+                    SymptomLogEntity("s2", pet.petId, "Biếng ăn", "Ăn ít hơn bình thường", System.currentTimeMillis() - 43_200_000)
+                )
+                "p2" -> listOf(
+                    SymptomLogEntity("s3", pet.petId, "Nôn nhẹ", "Nôn 1 lần sau khi ăn", System.currentTimeMillis() - 7_200_000)
+                )
+                "p6" -> listOf(
+                    SymptomLogEntity("s4", pet.petId, "Mệt mỏi", "Ít vận động, nằm nhiều", System.currentTimeMillis() - 3_600_000)
+                )
+                else -> emptyList()
+            }
+            map[pet.petId] = list
+        }
+
+        symptomMap.value = map
+    }
+
+        fun selectPet(pet: PetEntity?) {
+        selectedPet.value = pet
+    }
     fun toggleExpand() {
         isExpanded.value = !isExpanded.value
     }
@@ -121,5 +153,24 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
                 ?: pets.value.find { it.petId == petId } // fallback nếu không có repo
         }
     }
+    // Lấy danh sách triệu chứng của pet hiện tại
+    fun getSymptomsOfSelectedPet(): List<SymptomLogEntity> {
+        val petId = selectedPet.value?.petId ?: return emptyList()
+        return symptomMap.value[petId] ?: emptyList()
+    }
+
+    // Thêm triệu chứng mới cho pet hiện tại
+    fun addSymptomForSelectedPet(name: String, desc: String) {
+        val petId = selectedPet.value?.petId ?: return
+        val current = symptomMap.value[petId] ?: emptyList()
+        val nextId = "s${current.size + 1}"  // tạo id cố định tăng dần
+        val newSymptom = SymptomLogEntity(nextId, petId, name, desc, System.currentTimeMillis())
+        symptomMap.value = symptomMap.value.toMutableMap().apply { put(petId, current + newSymptom) }
+    }
+
 }
+
+
+
+
 

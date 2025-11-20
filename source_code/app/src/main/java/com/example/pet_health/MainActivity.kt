@@ -22,6 +22,8 @@ import com.example.pet_health.data.local.dao.PetDao
 import com.example.pet_health.ui.screen.WeightHeightScreen
 import com.example.pet_health.ui.viewmodel. PetViewModel
 import pet_health.data.local.AppDatabase
+import androidx.navigation.NavHostController
+
 
 
 class MainActivity : ComponentActivity() {
@@ -44,10 +46,11 @@ class MainActivity : ComponentActivity() {
                     HomeScreen(navController)
                 }
                 composable("health_tracking") {
-                    HealthTrackingScreen(viewModel = petViewModel)
+                    HealthTrackingScreen(viewModel = petViewModel,  navController = navController )
                 }
-                composable("weight_height") {
-                    WeightHeightScreen()
+                composable("weight_height/{petId}") { backStackEntry ->
+                    val petId = backStackEntry.arguments?.getString("petId")
+                    WeightHeightScreen(petId = petId)
                 }
             }
         }

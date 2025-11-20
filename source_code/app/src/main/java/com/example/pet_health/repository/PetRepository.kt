@@ -2,6 +2,10 @@ package com.example.pet_health.repository
 
 import com.example.pet_health.data.local.dao.PetDao
 import com.example.pet_health.data.entity.PetEntity
+import com.example.pet_health.data.entity.SymptomLogEntity
+import com.example.pet_health.data.local.dao.SymptomLogDao
+import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 
 class PetRepository(private val dao: PetDao) {
@@ -18,4 +22,23 @@ class PetRepository(private val dao: PetDao) {
         return dao.getPet(petId)
     }
 }
+class SymptomRepository(private val dao: SymptomLogDao) {
+
+    fun getSymptomLogs(petId: String): Flow<List<SymptomLogEntity>> {
+        return dao.getLogsByPet(petId)
+    }
+
+    suspend fun addSymptom(petId: String, name: String, desc: String) {
+        // Thêm UUID cho id
+        val newSymptom = SymptomLogEntity(
+            id = UUID.randomUUID().toString(),
+            petId = petId,
+            name = name,
+            description = desc,
+            timestamp = System.currentTimeMillis()
+        )
+        dao.insertLog(newSymptom)
+    }
+}
+
 

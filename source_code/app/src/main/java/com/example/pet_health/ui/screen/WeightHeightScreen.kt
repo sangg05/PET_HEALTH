@@ -164,10 +164,11 @@ fun DatePickerField(
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun WeightHeightScreen() {
+fun WeightHeightScreen(petId: String?) {
     var selectedTab by remember { mutableStateOf("Ngày") }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
+
 
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
@@ -291,6 +292,6 @@ fun WeightHeightScreen() {
 @Composable
 fun WeightHeightScreenPreview() {
     MaterialTheme {
-        WeightHeightScreen()
+        WeightHeightScreen( petId = "p1")
     }
 }

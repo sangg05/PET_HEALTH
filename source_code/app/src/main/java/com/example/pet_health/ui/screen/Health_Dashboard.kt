@@ -19,19 +19,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.google.accompanist.flowlayout.FlowRow
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.ui.viewmodel.PetViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HealthTrackingScreen(viewModel: PetViewModel) {
+fun HealthTrackingScreen(viewModel: PetViewModel ,navController: NavController) {
     val lightPink = Color(0xFFE8B4E8)
     val darkPink = Color(0xFFD896D8)
 
     val pets by viewModel.pets
     val isExpanded by viewModel.isExpanded
-    var selectedPet by remember { mutableStateOf<PetEntity?>(pets.firstOrNull()) }
+//    var selectedPet by remember { mutableStateOf<PetEntity?>(pets.firstOrNull()) }
 
     val scrollState = rememberScrollState()
 
@@ -45,15 +46,9 @@ fun HealthTrackingScreen(viewModel: PetViewModel) {
     var newSymptomName by remember { mutableStateOf("") }
     var newSymptomDesc by remember { mutableStateOf("") }
 
-    var symptoms by remember {
-        mutableStateOf(
-            listOf(
-                "Nôn mửa" to "Ngày: 10/11/2025 Giờ: 08:00 Mô Tả: Nôn ra thức ăn",
-                "Sốt cao" to "Ngày: 11/11/2025 Giờ: 12:00 Mô Tả: 39°C",
-                "Ho nhiều" to "Ngày: 12/11/2025 Giờ: 15:00 Mô Tả: Ho khan"
-            )
-        )
-    }
+    val symptoms = viewModel.getSymptomsOfSelectedPet()
+    val selectedPet by viewModel.selectedPet
+
 
     Scaffold(
         topBar = {
@@ -115,12 +110,12 @@ fun HealthTrackingScreen(viewModel: PetViewModel) {
                                 CategoryChip(
                                     text = "Tất cả",
                                     isSelected = selectedPet == null
-                                ) { selectedPet = null }
+                                ) { viewModel.selectPet(null) }
                             } else {
                                 CategoryChip(
                                     text = pet.name,
                                     isSelected = selectedPet == pet
-                                ) { selectedPet = pet }
+                                ) { viewModel.selectPet(pet) }
                             }
                         }
                     }
@@ -146,12 +141,12 @@ fun HealthTrackingScreen(viewModel: PetViewModel) {
                                 CategoryChip(
                                     text = "Tất cả",
                                     isSelected = selectedPet == null
-                                ) { selectedPet = null }
+                                ) {  viewModel.selectPet(null) }
                             } else {
                                 CategoryChip(
                                     text = pet.name,
                                     isSelected = selectedPet == pet
-                                ) { selectedPet = pet }
+                                ) {  viewModel.selectPet(pet)  }
                             }
                         }
                     }
@@ -167,8 +162,12 @@ fun HealthTrackingScreen(viewModel: PetViewModel) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 selectedPet?.let { pet ->
-                    HealthMetricCard("${pet.weightKg} kg", "Cân nặng", Modifier.weight(1f))
-                    HealthMetricCard("${pet.sizeCm ?: 0} cm", "Chiều cao", Modifier.weight(1f))
+                    HealthMetricCard("${pet.weightKg} kg", "Cân nặng", Modifier.weight(1f)){
+                        navController.navigate("weight_height/${pet.petId}")
+                    }
+                    HealthMetricCard("${pet.sizeCm ?: 0} cm", "Chiều cao", Modifier.weight(1f)){
+                        navController.navigate("weight_height/${pet.petId}")
+                    }
                 }
             }
 
@@ -191,19 +190,31 @@ fun HealthTrackingScreen(viewModel: PetViewModel) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // --- Symptoms section ---
-            Text("Nhật ký triệu chứng:", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(
+                text = "Nhật ký triệu chứng:",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                symptoms.forEach { (name, desc) ->
+                symptoms.forEach { symptom ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(
+                                text = symptom.name,        // từ SymptomLogEntity
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(desc, fontSize = 12.sp, color = Color.Gray)
+                            Text(
+                                text = symptom.description, // từ SymptomLogEntity
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }
@@ -212,18 +223,18 @@ fun HealthTrackingScreen(viewModel: PetViewModel) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // --- Add symptom button ---
+            // Nút thêm triệu chứng
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(lightPink)
-                    .padding(16.dp)
+                    .fillMaxWidth()           // chỉ chiếm chiều ngang
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
                 IconButton(
-                    onClick = { showForm2 = true },
+                    onClick = { showForm2 = true }, // khi nhấn sẽ bật form
                     modifier = Modifier
                         .size(48.dp)
                         .background(Color(0xFF00AA00), CircleShape)
-                        .align(Alignment.Center)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add symptom", tint = Color.White)
                 }
@@ -249,15 +260,17 @@ fun HealthTrackingScreen(viewModel: PetViewModel) {
             )
         }
 
-        // --- Form thêm triệu chứng ---
+//         --- Form thêm triệu chứng ---
         if (showForm2) {
             SymptomForm(
-                newSymptomName, { newSymptomName = it },
-                newSymptomDesc, { newSymptomDesc = it },
+                name = newSymptomName,
+                onNameChange = { newSymptomName = it },
+                desc = newSymptomDesc,
+                onDescChange = { newSymptomDesc = it },
                 onClose = { showForm2 = false },
                 onSave = {
                     if (newSymptomName.isNotBlank() && newSymptomDesc.isNotBlank()) {
-                        symptoms = symptoms + (newSymptomName to newSymptomDesc)
+                        viewModel.addSymptomForSelectedPet(newSymptomName, newSymptomDesc)
                         newSymptomName = ""
                         newSymptomDesc = ""
                         showForm2 = false

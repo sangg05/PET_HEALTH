@@ -7,7 +7,7 @@ plugins {
 
 
 }
-val roomVersion = "2.6.0"
+val roomVersion = "2.6.1"
 val hiltVersion = "2.48"
 val retrofitVersion = "2.9.0"
 
@@ -71,6 +71,8 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
     testImplementation("androidx.room:room-testing:$roomVersion")
+    implementation("androidx.room:room-ktx:2.6.1")
+
 
 
     // Hilt
