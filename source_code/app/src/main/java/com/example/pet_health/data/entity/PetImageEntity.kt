@@ -22,3 +22,4 @@ data class PetImageEntity(
     val imageUrl: String,
     val description: String? = null
 )
+

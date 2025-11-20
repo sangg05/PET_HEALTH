@@ -1,4 +1,4 @@
-package pet_health.data.local.dao
+package com.example.pet_health.data.local.dao
 
 import androidx.room.*
 import com.example.pet_health.data.entity.PetEntity
@@ -20,4 +20,5 @@ interface PetDao {
 
     @Delete
     suspend fun deletePet(petEntity: PetEntity)
+
 }
