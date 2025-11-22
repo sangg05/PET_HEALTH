@@ -1,66 +1,45 @@
 package com.example.pet_health.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.pet_health.ui.screen.*
+import androidx.navigation.navArgument
+import com.example.pet_health.ui.screens.*
 
 @Composable
 fun AppScreen() {
+
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = "reminder_screen"
+        startDestination = "home"
     ) {
 
-        composable("reminder_screen") {
-            ReminderScreen(navController)
-        }
+        composable("home") { HomeScreen(navController) }
+        composable("pet_list") { PetListScreen(navController) }
+        composable("add_pet") { AddPetScreen(navController) }
+        composable("health_records") { HealthRecordScreen(navController) }
+        composable("add_health_record") { AddHealthRecordScreen(navController) }
 
-        composable("reminder_form") {
-            ReminderFormScreen(navController)
-        }
-
-        composable("add_record") {
-            AddRecordScreen(navController)
-        }
-
-        composable("tiem_thuoc_list") {
-            TiemThuocListScreen(navController)
-        }
-
-        composable("notification_screen") {
-            NotificationScreen(navController)
-        }
-
-        // ⭐ ROUTE ĐÃ CHUẨN HÓA 7 THAM SỐ
         composable(
-            route = "reminder_detail/{pet}/{type}/{date}/{time}/{repeat}/{early}/{note}"
-        ) { backStackEntry ->
-            ReminderDetailScreen(
-                navController = navController,
-                pet = backStackEntry.arguments?.getString("pet") ?: "",
-                type = backStackEntry.arguments?.getString("type") ?: "",
-                date = backStackEntry.arguments?.getString("date") ?: "",
-                time = backStackEntry.arguments?.getString("time") ?: "",
-                repeat = backStackEntry.arguments?.getString("repeat") ?: "",
-                early = backStackEntry.arguments?.getString("early") ?: "",
-                note = backStackEntry.arguments?.getString("note") ?: ""
+            route = "pet_profile?name={name}&breed={breed}&age={age}&imageRes={imageRes}",
+            arguments = listOf(
+                navArgument("name") { type = NavType.StringType; defaultValue = "" },
+                navArgument("breed") { type = NavType.StringType; defaultValue = "" },
+                navArgument("age") { type = NavType.IntType; defaultValue = 0 },
+                navArgument("imageRes") { type = NavType.IntType; defaultValue = 0 }
             )
-        }
-
-        composable(
-            route = "record_detail/{petName}/{recordType}/{recordName}/{date}/{note}"
         ) { backStackEntry ->
-            RecordDetailScreen(
-                navController = navController,
-                petName = backStackEntry.arguments?.getString("petName") ?: "",
-                recordType = backStackEntry.arguments?.getString("recordType") ?: "",
-                recordName = backStackEntry.arguments?.getString("recordName") ?: "",
-                date = backStackEntry.arguments?.getString("date") ?: "",
-                note = backStackEntry.arguments?.getString("note") ?: ""
+
+            PetProfileScreen(
+                name = backStackEntry.arguments?.getString("name") ?: "",
+                breed = backStackEntry.arguments?.getString("breed") ?: "",
+                age = backStackEntry.arguments?.getInt("age") ?: 0,
+                imageRes = backStackEntry.arguments?.getInt("imageRes") ?: 0,
+                navController = navController
             )
         }
     }
