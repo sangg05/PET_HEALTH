@@ -25,8 +25,8 @@ import java.nio.charset.StandardCharsets
 data class ReminderItem(
     val time: String,
     val date: String,
-    val status: String,
-    val color: Color
+    var status: String, // Đổi thành 'var' để có thể cập nhật
+    var color: Color // Đổi thành 'var' để có thể cập nhật
 )
 
 @Composable
@@ -50,15 +50,24 @@ fun ReminderDetailScreen(
     val displayNote = URLDecoder.decode(note, StandardCharsets.UTF_8.toString())
 
     // Fake history (Giả định lịch sử nhắc lịch có thể liên quan đến petName)
-    val reminders = listOf(
-        ReminderItem("9:00", "25/10/2024", "Hoàn thành", Color(0xFFB6F2B8)),
-        ReminderItem("9:00", "25/04/2025", "Hoàn thành", Color(0xFFB6F2B8)),
-        ReminderItem(displayTime, displayDate, "Sắp tới", Color.White)
-    )
+    // SỬ DỤNG remember { mutableStateListOf } để có thể cập nhật UI khi thay đổi list
+    val initialReminders = remember {
+        mutableStateListOf(
+            ReminderItem("9:00", "25/10/2024", "Hoàn thành", Color(0xFFB6F2B8)),
+            ReminderItem("9:00", "25/04/2025", "Hoàn thành", Color(0xFFB6F2B8)),
+            ReminderItem(displayTime, displayDate, "Sắp tới", Color.White)
+        )
+    }
 
-    var selectedReminder by remember { mutableStateOf(reminders.last()) }
-    var status by remember { mutableStateOf(selectedReminder.status) }
+    // Luôn chọn mục "Sắp tới" hoặc mục cuối cùng để hiển thị nút hành động
+    var selectedReminder by remember { mutableStateOf(initialReminders.last()) }
     var showConfirmDialog by remember { mutableStateOf(false) }
+
+    // Dùng LaunchedEffect để đảm bảo selectedReminder luôn là mục cuối cùng khi list thay đổi
+    LaunchedEffect(initialReminders.size, initialReminders.last().status) {
+        selectedReminder = initialReminders.last()
+    }
+
 
     Column(
         modifier = Modifier
@@ -118,19 +127,20 @@ fun ReminderDetailScreen(
         Spacer(Modifier.height(16.dp))
 
         // ---------- HISTORY ----------
-        reminders.forEach { reminder ->
+        initialReminders.forEach { reminder ->
             val isSelected = reminder == selectedReminder
 
             ReminderHistoryItem(
                 time = "${reminder.time}    ${reminder.date}",
                 status = reminder.status,
-                backgroundColor = reminder.color,
-                textColor = if (reminder.status == "Hoàn thành") Color.Black else Color.Red,
+                // Đảm bảo item hiện tại sử dụng màu và trạng thái cập nhật
+                backgroundColor = if (reminder.status == "Hoàn thành") Color(0xFFB6F2B8) else if (reminder.status == "Hoãn lại") Color(0xFFFFCCCC) else Color.White,
+                textColor = if (reminder.status == "Hoàn thành") Color.Black else if (reminder.status == "Hoãn lại") Color.Red else Color.Red,
                 border = isSelected,
-                showEdit = reminder.status != "Hoàn thành",
+                // Chỉ cho phép chỉnh sửa nếu trạng thái là "Sắp tới"
+                showEdit = (reminder.status == "Sắp tới" || reminder.status == "Hoãn lại") && isSelected,
                 onClick = {
                     selectedReminder = reminder
-                    status = reminder.status
                 },
                 onEditClick = {
                     navController.navigate("reminder_form")
@@ -141,19 +151,31 @@ fun ReminderDetailScreen(
         Spacer(Modifier.height(30.dp))
 
         // ---------- ACTION BUTTONS ----------
-        if (status != "Hoàn thành") {
+        // Chỉ hiển thị nút Hoãn lại và Hoàn thành nếu trạng thái đang là "Sắp tới" hoặc "Hoãn lại"
+        if (selectedReminder.status == "Sắp tới" || selectedReminder.status == "Hoãn lại") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
 
+                // Nút HOÃN LẠI
                 Button(
-                    onClick = { status = "Hoãn" },
+                    // Logic: Cập nhật trạng thái item hiện tại thành "Hoãn lại" và đổi màu
+                    onClick = {
+                        val index = initialReminders.indexOf(selectedReminder)
+                        if (index != -1) {
+                            initialReminders[index] = initialReminders[index].copy(
+                                status = "Hoãn lại",
+                                color = Color(0xFFFFCCCC) // Màu đỏ nhạt cho Hoãn lại
+                            )
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3B30))
                 ) {
                     Text("Hoãn lại", color = Color.White, fontSize = 16.sp)
                 }
 
+                // Nút HOÀN THÀNH
                 Button(
                     onClick = { showConfirmDialog = true },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8BC34A))
@@ -171,11 +193,14 @@ fun ReminderDetailScreen(
                 text = { Text("Bạn xác nhận đã hoàn thành chứ?") },
                 confirmButton = {
                     TextButton(onClick = {
-                        status = "Hoàn thành"
-                        selectedReminder = selectedReminder.copy(
-                            status = "Hoàn thành",
-                            color = Color(0xFFB6F2B8)
-                        )
+                        // Logic: Cập nhật trạng thái item hiện tại thành "Hoàn thành" và đổi màu xanh
+                        val index = initialReminders.indexOf(selectedReminder)
+                        if (index != -1) {
+                            initialReminders[index] = initialReminders[index].copy(
+                                status = "Hoàn thành",
+                                color = Color(0xFFB6F2B8)
+                            )
+                        }
                         showConfirmDialog = false
                     }) {
                         Text("Đồng ý", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
@@ -191,6 +216,7 @@ fun ReminderDetailScreen(
     }
 }
 
+// Hàm ReminderHistoryItem không cần thay đổi nhiều
 @Composable
 fun ReminderHistoryItem(
     time: String,
