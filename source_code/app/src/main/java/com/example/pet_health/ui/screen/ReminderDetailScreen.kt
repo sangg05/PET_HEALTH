@@ -19,6 +19,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.foundation.BorderStroke
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+
+data class ReminderItem(
+    val time: String,
+    val date: String,
+    val status: String,
+    val color: Color
+)
 
 @Composable
 fun ReminderDetailScreen(
@@ -28,18 +37,23 @@ fun ReminderDetailScreen(
     date: String,
     time: String,
     repeat: String,
-    note: String,
-    early: String
+    early: String,
+    note: String
 ) {
+    // Giải mã text đã encode
+    val petName = URLDecoder.decode(pet, StandardCharsets.UTF_8.toString())
+    val displayType = URLDecoder.decode(type, StandardCharsets.UTF_8.toString())
+    val displayDate = URLDecoder.decode(date, StandardCharsets.UTF_8.toString())
+    val displayTime = URLDecoder.decode(time, StandardCharsets.UTF_8.toString())
+    val displayRepeat = URLDecoder.decode(repeat, StandardCharsets.UTF_8.toString())
+    val displayEarly = URLDecoder.decode(early, StandardCharsets.UTF_8.toString())
+    val displayNote = URLDecoder.decode(note, StandardCharsets.UTF_8.toString())
 
-    // --- FIX TYPE ---
-    val displayType = type.replace("+", " ")
-
-    // Fake data history (sau này API trả về)
+    // Fake history (Giả định lịch sử nhắc lịch có thể liên quan đến petName)
     val reminders = listOf(
         ReminderItem("9:00", "25/10/2024", "Hoàn thành", Color(0xFFB6F2B8)),
         ReminderItem("9:00", "25/04/2025", "Hoàn thành", Color(0xFFB6F2B8)),
-        ReminderItem(time, date, "Sắp tới", Color.White)
+        ReminderItem(displayTime, displayDate, "Sắp tới", Color.White)
     )
 
     var selectedReminder by remember { mutableStateOf(reminders.last()) }
@@ -72,7 +86,7 @@ fun ReminderDetailScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ---------- MAIN INFOMATION CARD ----------
+        // ---------- MAIN INFO ----------
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -82,14 +96,23 @@ fun ReminderDetailScreen(
         ) {
 
             Text(displayType, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
-            Spacer(Modifier.height(4.dp))
 
-            Text("Mũi: $note", fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
+            // Sử dụng tên thú cưng (đã giải mã)
+            Text("Thú cưng: $petName", fontWeight = FontWeight.SemiBold)
 
-            Text("Giờ: $time")
-            Text("Ngày: $date")
-            Text("Lặp lại: $repeat")
+            Spacer(Modifier.height(4.dp))
+            Text("Mũi: $displayNote", fontWeight = FontWeight.SemiBold)
+
+            Spacer(Modifier.height(4.dp))
+            Text("Ngày: $displayDate")
+            Text("Giờ: $displayTime")
+
+            Spacer(Modifier.height(4.dp))
+            Text("Lặp lại: $displayRepeat")
+
+            Spacer(Modifier.height(4.dp))
+            Text("Nhắc sớm: $displayEarly")
         }
 
         Spacer(Modifier.height(16.dp))
@@ -99,7 +122,7 @@ fun ReminderDetailScreen(
             val isSelected = reminder == selectedReminder
 
             ReminderHistoryItem(
-                time = "${reminder.time}   ${reminder.date}",
+                time = "${reminder.time}    ${reminder.date}",
                 status = reminder.status,
                 backgroundColor = reminder.color,
                 textColor = if (reminder.status == "Hoàn thành") Color.Black else Color.Red,
@@ -140,7 +163,7 @@ fun ReminderDetailScreen(
             }
         }
 
-        // ---------- CONFIRM DIALOG ----------
+        // ---------- DIALOG ----------
         if (showConfirmDialog) {
             AlertDialog(
                 onDismissRequest = { showConfirmDialog = false },
@@ -211,10 +234,3 @@ fun ReminderHistoryItem(
         }
     }
 }
-
-data class ReminderItem(
-    val time: String,
-    val date: String,
-    val status: String,
-    val color: Color
-)

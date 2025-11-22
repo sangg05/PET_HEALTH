@@ -5,7 +5,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.pet_health.ui.screen.*
-import com.example.pet_health.ui.screen.AddRecordScreen
 
 @Composable
 fun AppScreen() {
@@ -16,32 +15,27 @@ fun AppScreen() {
         startDestination = "reminder_screen"
     ) {
 
-        // Danh sách nhắc nhở
         composable("reminder_screen") {
             ReminderScreen(navController)
         }
 
-        // Form tạo nhắc nhở
         composable("reminder_form") {
             ReminderFormScreen(navController)
         }
 
-        // Thêm hồ sơ
         composable("add_record") {
             AddRecordScreen(navController)
         }
 
-        // Tiêm thuốc list
         composable("tiem_thuoc_list") {
             TiemThuocListScreen(navController)
         }
 
-        // Notification
         composable("notification_screen") {
             NotificationScreen(navController)
         }
 
-        // 🔥 Route chi tiết nhắc nhở — ĐÃ SỬA & ĐỦ 7 PARAMETERS
+        // ⭐ ROUTE ĐÃ CHUẨN HÓA 7 THAM SỐ
         composable(
             route = "reminder_detail/{pet}/{type}/{date}/{time}/{repeat}/{early}/{note}"
         ) { backStackEntry ->
@@ -57,8 +51,6 @@ fun AppScreen() {
             )
         }
 
-
-        // Hồ sơ chi tiết
         composable(
             route = "record_detail/{petName}/{recordType}/{recordName}/{date}/{note}"
         ) { backStackEntry ->

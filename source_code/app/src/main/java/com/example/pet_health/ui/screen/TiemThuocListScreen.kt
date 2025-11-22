@@ -39,7 +39,9 @@ data class TiemThuocItem(
 @Composable
 fun TiemThuocListScreen(navController: NavController? = null) {
 
+    // 🐶 Sau này danh sách này sẽ đến từ API Backend
     val allPets = listOf("Tất cả", "Nâu", "Mỹ Diệu", "Cọp", "Đậu", "Mỹ Lem")
+
     var selectedPet by remember { mutableStateOf("Tất cả") }
 
     val items = listOf(
@@ -126,7 +128,6 @@ fun TiemThuocListScreen(navController: NavController? = null) {
 
         Spacer(Modifier.height(8.dp))
 
-        // ==== Thanh điều hướng dưới ====
         BottomNavigationBarStyled()
     }
 }
@@ -139,21 +140,21 @@ fun PetFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .border(
                 width = if (selected) 2.dp else 1.dp,
-                color = if (selected) Color(0xFF7B1FA2) else Color.DarkGray,
+                color = if (selected) Color(0xFF7B1FA2) else Color.Gray,
                 shape = RoundedCornerShape(20.dp)
             )
             .background(
-                color = if (selected) Color(0xFFD7A7E5) else Color(0xFFFAD3F5),
+                color = Color.White, // ✔️ luôn trắng
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
             text,
             fontSize = 14.sp,
-            color = if (selected) Color.Black else Color.DarkGray,
-            fontWeight = FontWeight.Medium
+            color = if (selected) Color(0xFF7B1FA2) else Color.Gray,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
         )
     }
 }
@@ -165,7 +166,6 @@ fun TiemThuocCard(item: TiemThuocItem, navController: NavController?) {
             .fillMaxWidth()
             .padding(vertical = 5.dp)
             .clickable {
-                // 👉 Mã hóa tham số trước khi navigate để tránh lỗi route
                 val encodedPetName = Uri.encode(item.petName)
                 val encodedRecordType = Uri.encode(if (item.title.startsWith("Tiêm")) "Tiêm" else "Thuốc")
                 val encodedRecordName = Uri.encode(item.title)
