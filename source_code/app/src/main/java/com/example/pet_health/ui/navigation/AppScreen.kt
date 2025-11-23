@@ -19,10 +19,10 @@ fun AppScreen() {
     ) {
 
         composable("home") { HomeScreen(navController) }
-        composable("pet_list") { PetListScreen(navController) }
-        composable("add_pet") { AddPetScreen(navController) }
-        composable("health_records") { HealthRecordScreen(navController) }
-        composable("add_health_record") { AddHealthRecordScreen(navController) }
+//        composable("pet_list") { PetListScreen(navController) }
+//        composable("add_pet") { AddPetScreen(navController) }
+//        composable("health_records") { HealthRecordScreen(navController) }
+//        composable("add_health_record") { AddHealthRecordScreen(navController) }
 
         composable(
             route = "pet_profile?name={name}&breed={breed}&age={age}&imageRes={imageRes}",
@@ -34,13 +34,13 @@ fun AppScreen() {
             )
         ) { backStackEntry ->
 
-            PetProfileScreen(
-                name = backStackEntry.arguments?.getString("name") ?: "",
-                breed = backStackEntry.arguments?.getString("breed") ?: "",
-                age = backStackEntry.arguments?.getInt("age") ?: 0,
-                imageRes = backStackEntry.arguments?.getInt("imageRes") ?: 0,
-                navController = navController
-            )
+//            PetProfileScreen(
+//                name = backStackEntry.arguments?.getString("name") ?: "",
+//                breed = backStackEntry.arguments?.getString("breed") ?: "",
+//                age = backStackEntry.arguments?.getInt("age") ?: 0,
+//                imageRes = backStackEntry.arguments?.getInt("imageRes") ?: 0,
+//                navController = navController
+//            )
         }
     }
 }
