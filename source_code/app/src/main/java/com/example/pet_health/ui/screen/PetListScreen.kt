@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +29,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.pet_health.R
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import com.google.accompanist.flowlayout.FlowRow
+
 
 @Composable
 fun PetListScreen(navController: NavController) {
@@ -36,107 +44,164 @@ fun PetListScreen(navController: NavController) {
     var selectedType by remember { mutableStateOf("Tất cả") }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Data mẫu
     val pets = listOf(
         Pet("Doggy", "Poodle", 3, R.drawable.pet_dog, "Chó"),
+        Pet("Doggy", "Poodle", 3, R.drawable.pet_dog, "Chó"),
+        Pet("Doggy", "Poodle", 3, R.drawable.pet_dog, "Chó"),
+        Pet("Doggy", "Poodle", 3, R.drawable.pet_dog, "Chó"),
+
         Pet("Nhum", "Anh lông ngắn", 2, R.drawable.pet_cat, "Mèo"),
         Pet("Sú", "Thỏ tai cụp", 2, R.drawable.pet_rabbit, "Thỏ")
+        // ... thêm pet khác nếu muốn
     )
 
     val petsFiltered = pets.filter {
         (selectedType == "Tất cả" || it.type == selectedType) &&
                 (searchQuery.isEmpty() || it.name.contains(searchQuery, ignoreCase = true))
     }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
-                )
-            )
-            .padding(16.dp)
-    ) {
-        Column {
-
-            // TITLE
+    Scaffold(
+        bottomBar = {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, "Back", tint = Color.Black)
-                }
-                Text("Danh sách thú cưng", 20.sp, FontWeight.Bold, Color.Black)
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // FILTER CHIPS
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                petTypes.forEach { type ->
-                    PetTypeChip(
-                        text = type,
-                        selected = selectedType == type,
-                        onClick = { selectedType = type }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // SEARCH BOX
-            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(45.dp)
-                    .border(1.dp, Color.Gray.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                    .background(Color.White)
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.CenterStart
+                    .height(60.dp)
+                    .background(Color.White),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                BasicTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    textStyle = TextStyle(fontSize = 15.sp)
+                Icon(
+                    Icons.Default.Home,
+                    contentDescription = "Trang chủ",
+                    tint = Color(0xFF6200EE),
+                    modifier = Modifier.size(32.dp)
+                )
+                Icon(
+                    Icons.Default.Notifications,
+                    contentDescription = "Thông báo",
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(32.dp)
+                )
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Hồ sơ",
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(32.dp)
                 )
             }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
+                    )
+                )
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Column(modifier = Modifier.fillMaxSize()) {
 
-            // ============================
-            // LAZY COLUMN — FIX APP CRASH
-            // ============================
-            LazyColumn(
-                modifier = Modifier.fillMaxHeight(),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(petsFiltered) { pet ->
-                    PetCard(pet, navController)
-                    Spacer(modifier = Modifier.height(12.dp))
+                // HEADER
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, "Back", tint = Color.Black)
+                    }
+                    Text(
+                        "Danh sách thú cưng",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // FILTER CHIPS 2 HÀNG
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    mainAxisSpacing = 10.dp,
+                    crossAxisSpacing = 10.dp
+                ) {
+                    petTypes.forEach { type ->
+                        PetTypeChip(
+                            text = type,
+                            selected = selectedType == type,
+                            onClick = { selectedType = type }
+
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // SEARCH BOX
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(45.dp)
+                        .border(1.dp, Color.Gray.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        textStyle = TextStyle(fontSize = 15.sp, color = Color.Black),
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { innerTextField ->
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    text = "Tìm kiếm...",
+                                    fontSize = 15.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                            innerTextField()
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // LAZY COLUMN
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = 120.dp)
+                ) {
+                    items(petsFiltered) { pet ->
+                        PetCard(pet = pet, navController = navController)
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    // FAB nằm cuối LazyColumn, sẽ cuộn theo nội dung
+                    item {
+                        Spacer(Modifier.height(16.dp))
+                        FloatingActionButton(
+                            onClick = { navController.navigate("add_pet") },
+                            containerColor = Color(0xFFB2F0C0),
+                            shape = CircleShape,
+                            modifier = Modifier
+                                .padding(horizontal = 120.dp) // chỉnh vị trí
+                                .size(60.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.Black)
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
                 }
             }
-        }
-
-        FloatingActionButton(
-            onClick = { navController.navigate("add_pet") },
-            containerColor = Color(0xFFB2F0C0),
-            shape = CircleShape,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-100).dp)
-                .size(65.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.Black)
         }
     }
 }
+
 
 @Composable
 fun PetCard(pet: Pet, navController: NavController) {
@@ -168,7 +233,11 @@ fun PetCard(pet: Pet, navController: NavController) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column {
-                Text(pet.name, FontWeight.Bold, 18.sp)
+                Text(
+                    text = pet.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
                 Text("Loài: ${pet.breed}")
                 Text("Tuổi: ${pet.age}")
             }
@@ -194,7 +263,7 @@ fun PetTypeChip(text: String, selected: Boolean, onClick: () -> Unit) {
         modifier = Modifier.height(36.dp)
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp)) {
-            Text(text, fontSize = 14.sp, color = Color.Black)
+            Text(text, fontSize = 16.sp, color = Color.Black)
         }
     }
 }

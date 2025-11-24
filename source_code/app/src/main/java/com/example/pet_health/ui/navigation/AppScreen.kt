@@ -19,7 +19,7 @@ fun AppScreen() {
     ) {
 
         composable("home") { HomeScreen(navController) }
-//        composable("pet_list") { PetListScreen(navController) }
+        composable("pet_list") { PetListScreen(navController) }
 //        composable("add_pet") { AddPetScreen(navController) }
 //        composable("health_records") { HealthRecordScreen(navController) }
 //        composable("add_health_record") { AddHealthRecordScreen(navController) }

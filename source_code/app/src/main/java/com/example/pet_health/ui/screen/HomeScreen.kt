@@ -157,7 +157,8 @@ fun HomeScreen(navController: NavController) {
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
                             FeatureButton("Sổ tiêm\n& thuốc điện tử", R.drawable.ic_pill, Color(0xFFF06292)) {}
-                            FeatureButton("Danh sách\nthú cưng", R.drawable.ic_paw, Color(0xFFCE93D8)) {}
+                            FeatureButton("Danh sách\nthú cưng", R.drawable.ic_paw, Color(0xFFCE93D8))
+                            {    navController.navigate("pet_list") }
                             Spacer(modifier = Modifier.width(80.dp))
                         }
                     }
