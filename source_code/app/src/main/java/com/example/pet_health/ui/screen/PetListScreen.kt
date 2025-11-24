@@ -35,7 +35,14 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import com.google.accompanist.flowlayout.FlowRow
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
 
+
+val lightPink = Color(0xFFFFD2FC)
+@OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun PetListScreen(navController: NavController) {
@@ -60,6 +67,17 @@ fun PetListScreen(navController: NavController) {
                 (searchQuery.isEmpty() || it.name.contains(searchQuery, ignoreCase = true))
     }
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Danh sách thú cưng", fontWeight = FontWeight.Bold, color = Color.Black) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
+            )
+        },
         bottomBar = {
             Row(
                 modifier = Modifier
@@ -103,22 +121,6 @@ fun PetListScreen(navController: NavController) {
         ) {
 
             Column(modifier = Modifier.fillMaxSize()) {
-
-                // HEADER
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = Color.Black)
-                    }
-                    Text(
-                        "Danh sách thú cưng",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 

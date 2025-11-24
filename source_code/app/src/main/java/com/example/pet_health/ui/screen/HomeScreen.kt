@@ -34,8 +34,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.pet_health.R
 
-private val darkPink = Color(0xFFD81B60)
-
 @Composable
 fun HomeScreen(navController: NavController) {
     val scrollState = rememberScrollState()

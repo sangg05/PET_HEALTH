@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.pet_health.ui.screens.*
 
+
 @Composable
 fun AppScreen() {
 
@@ -34,13 +35,13 @@ fun AppScreen() {
             )
         ) { backStackEntry ->
 
-//            PetProfileScreen(
-//                name = backStackEntry.arguments?.getString("name") ?: "",
-//                breed = backStackEntry.arguments?.getString("breed") ?: "",
-//                age = backStackEntry.arguments?.getInt("age") ?: 0,
-//                imageRes = backStackEntry.arguments?.getInt("imageRes") ?: 0,
-//                navController = navController
-//            )
+            PetProfileScreen(
+                name = backStackEntry.arguments?.getString("name") ?: "",
+                breed = backStackEntry.arguments?.getString("breed") ?: "",
+                age = backStackEntry.arguments?.getInt("age") ?: 0,
+                imageRes = backStackEntry.arguments?.getInt("imageRes") ?: 0,
+                navController = navController
+            )
         }
     }
 }
