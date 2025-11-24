@@ -21,7 +21,7 @@ fun AppScreen() {
 
         composable("home") { HomeScreen(navController) }
         composable("pet_list") { PetListScreen(navController) }
-//        composable("add_pet") { AddPetScreen(navController) }
+        composable("add_pet") { AddPetScreen(navController) }
 //        composable("health_records") { HealthRecordScreen(navController) }
 //        composable("add_health_record") { AddHealthRecordScreen(navController) }
 
@@ -41,6 +41,33 @@ fun AppScreen() {
                 age = backStackEntry.arguments?.getInt("age") ?: 0,
                 imageRes = backStackEntry.arguments?.getInt("imageRes") ?: 0,
                 navController = navController
+            )
+        }
+        composable(
+            route = "add_pet_new?editMode={editMode}&initName={initName}&initType={initType}&initAge={initAge}&initColor={initColor}&initWeight={initWeight}&initHeight={initHeight}&initAdoptionDate={initAdoptionDate}&initImageUri={initImageUri}",
+            arguments = listOf(
+                navArgument("editMode") { type = NavType.BoolType; defaultValue = false },
+                navArgument("initName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("initType") { type = NavType.StringType; defaultValue = "" },
+                navArgument("initAge") { type = NavType.StringType; defaultValue = "" },
+                navArgument("initColor") { type = NavType.StringType; defaultValue = "" },
+                navArgument("initWeight") { type = NavType.StringType; defaultValue = "" },
+                navArgument("initHeight") { type = NavType.StringType; defaultValue = "" },
+                navArgument("initAdoptionDate") { type = NavType.StringType; defaultValue = "" },
+                navArgument("initImageUri") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            AddPetScreen(
+                navController = navController,
+                editMode = backStackEntry.arguments?.getBoolean("editMode") ?: false,
+                initName = backStackEntry.arguments?.getString("initName") ?: "",
+                initType = backStackEntry.arguments?.getString("initType") ?: "",
+                initAge = backStackEntry.arguments?.getString("initAge") ?: "",
+                initColor = backStackEntry.arguments?.getString("initColor") ?: "",
+                initWeight = backStackEntry.arguments?.getString("initWeight") ?: "",
+                initHeight = backStackEntry.arguments?.getString("initHeight") ?: "",
+                initAdoptionDate = backStackEntry.arguments?.getString("initAdoptionDate") ?: "",
+                initImageUri = backStackEntry.arguments?.getString("initImageUri")
             )
         }
     }
