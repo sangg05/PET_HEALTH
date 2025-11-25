@@ -7,6 +7,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.pet_health.R
 
 @Composable
 fun PetListScreen(navController: NavController) {
@@ -68,7 +71,12 @@ fun PetListScreen(navController: NavController) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(Icons.Default.ArrowBack, "Back", tint = Color.Black)
                 }
-                Text("Danh sách thú cưng", 20.sp, FontWeight.Bold, Color.Black)
+                Text(
+                    text = "Danh sách thú cưng",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -168,7 +176,12 @@ fun PetCard(pet: Pet, navController: NavController) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column {
-                Text(pet.name, FontWeight.Bold, 18.sp)
+                Text(
+                    text = pet.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+
                 Text("Loài: ${pet.breed}")
                 Text("Tuổi: ${pet.age}")
             }
