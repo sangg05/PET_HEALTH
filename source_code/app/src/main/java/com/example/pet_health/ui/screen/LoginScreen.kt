@@ -35,6 +35,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -115,7 +116,30 @@ fun LoginScreen(
             }
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(8.dp))
+
+        // ------ GHI NHỚ ĐĂNG NHẬP ------
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Checkbox(
+                checked = rememberMe,
+                onCheckedChange = { rememberMe = it },
+                colors = CheckboxDefaults.colors(
+                    checkmarkColor = Color.White,
+                    checkedColor = buttonColor
+                )
+            )
+            Text(
+                "Ghi nhớ đăng nhập",
+                color = Color.Black,
+                fontSize = 15.sp,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
 
         Button(
             onClick = { onLoginClick(email, password) },
@@ -128,7 +152,7 @@ fun LoginScreen(
             Text("ĐĂNG NHẬP", color = Color.White, fontSize = 18.sp)
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
         TextButton(onClick = onNavigateForgot) {
             Text(
@@ -138,7 +162,7 @@ fun LoginScreen(
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
 
         // ------ CĂN HÀNG ĐÚNG CHUẨN ------
         Row(
