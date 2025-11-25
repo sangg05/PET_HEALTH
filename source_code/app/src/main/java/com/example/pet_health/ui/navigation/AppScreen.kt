@@ -22,8 +22,8 @@ fun AppScreen() {
         composable("home") { HomeScreen(navController) }
         composable("pet_list") { PetListScreen(navController) }
         composable("add_pet") { AddPetScreen(navController) }
-//        composable("health_records") { HealthRecordScreen(navController) }
-//        composable("add_health_record") { AddHealthRecordScreen(navController) }
+        composable("health_records") { HealthRecordScreen(navController) }
+        composable("add_health_record") { AddHealthRecordScreen(navController) }
 
         composable(
             route = "pet_profile?name={name}&breed={breed}&age={age}&imageRes={imageRes}",
