@@ -50,9 +50,32 @@ fun HomeScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                IconButton(onClick = { /* xử lý Home */ }) {
+                    Icon(
+                        Icons.Default.Home,
+                        contentDescription = "Trang chủ",
+                        tint = Color(0xFF6200EE),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                IconButton(onClick = { /* xử lý Notifications */ }) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Thông báo",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                IconButton(onClick = { /* xử lý Profile */ }) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Hồ sơ",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
     ) { paddingValues->
@@ -157,7 +180,8 @@ fun HomeScreen(navController: NavController) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
-                            FeatureButton("Sổ tiêm\n& thuốc điện tử", R.drawable.ic_pill, Color(0xFFF06292)) {}
+                            FeatureButton("Sổ tiêm\n& thuốc điện tử", R.drawable.ic_pill, Color(0xFFF06292))
+                            { navController.navigate("medical_records") }
                             FeatureButton("Danh sách\nthú cưng", R.drawable.ic_paw, Color(0xFFCE93D8))
                             {    navController.navigate("pet_list") }
                             Spacer(modifier = Modifier.width(80.dp))

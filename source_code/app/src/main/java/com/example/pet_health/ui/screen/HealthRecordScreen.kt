@@ -31,7 +31,7 @@ import com.google.accompanist.flowlayout.FlowRow
 fun HealthRecordScreen(navController: NavController) {
 
     val selectedPet = remember { mutableStateOf("Tất cả") }
-    val petOptions = listOf("Tất cả", "Nâu", "Cọp", "Đậu", "Mỹ Diệu", "Mỹ Lem")
+    val petOptions = listOf("Tất cả", "Nâu", "Cọp", "Đậu", "Mỹ Diệu", "Mỹ Lem", "Mỹ Lem")
 
     // Dữ liệu bệnh án dùng state để cập nhật UI khi xóa
     val healthRecords = remember {
@@ -63,9 +63,32 @@ fun HealthRecordScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                IconButton(onClick = { /* xử lý Home */ }) {
+                    Icon(
+                        Icons.Default.Home,
+                        contentDescription = "Trang chủ",
+                        tint = Color(0xFF6200EE),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                IconButton(onClick = { /* xử lý Notifications */ }) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Thông báo",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                IconButton(onClick = { /* xử lý Profile */ }) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Hồ sơ",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
     ) { innerPadding ->

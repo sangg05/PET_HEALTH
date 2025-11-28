@@ -13,7 +13,9 @@ import com.example.pet_health.repository.PetRepository
 import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.ReminderFormScreen
 import com.example.pet_health.ui.screen.ReminderScreen
+import com.example.pet_health.ui.screen.TiemThuocListScreen
 import com.example.pet_health.ui.screen.WeightHeightScreen
+import com.example.pet_health.ui.screen.AddRecordScreen
 import com.example.pet_health.ui.screens.*
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
@@ -57,6 +59,8 @@ fun AppScreen() {
                 petId = petId
             )
         }
+        composable("medical_records") { TiemThuocListScreen(navController) }
+        composable("add_record") { AddRecordScreen(navController) }
         composable(
             route = "pet_profile?name={name}&breed={breed}&age={age}&imageRes={imageRes}",
             arguments = listOf(
@@ -104,3 +108,5 @@ fun AppScreen() {
         }
     }
 }
+
+

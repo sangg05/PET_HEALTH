@@ -25,6 +25,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.google.accompanist.flowlayout.FlowRow
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import com.example.pet_health.ui.screens.lightPink
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBar
 
 // ----------------- DATA MODEL -----------------
 data class TiemThuocItem(
@@ -36,104 +43,143 @@ data class TiemThuocItem(
 )
 
 // ----------------- SCREEN -----------------
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TiemThuocListScreen(navController: NavController? = null) {
-
-    // 🐶 Sau này danh sách này sẽ đến từ API Backend
     val allPets = listOf("Tất cả", "Nâu", "Mỹ Diệu", "Cọp", "Đậu", "Mỹ Lem")
-
     var selectedPet by remember { mutableStateOf("Tất cả") }
 
     val items = listOf(
         TiemThuocItem(2025, "Tiêm - FVRCP #2", "Đậu", "25/10/2025", "Bệnh viện thú y Procare"),
         TiemThuocItem(2025, "Thuốc - Amoxicilin 500mg", "Mập", "25/10/2025", "Bệnh viện thú y Procare"),
         TiemThuocItem(2024, "Tiêm - FVRCP #2", "Mập", "25/04/2024", "Bệnh viện thú y Procare"),
+        TiemThuocItem(2024, "Tiêm - FVRCP #2", "Mập", "25/04/2024", "Bệnh viện thú y Procare"),
     )
 
     val grouped = items.groupBy { it.year }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(brush = Brush.verticalGradient(listOf(Color(0xFFFAD3F5), Color(0xFFFCE6F9))))
-            .padding(16.dp)
-    ) {
-
-        // ==== Thanh tiêu đề ====
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { navController?.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
-            }
-            Text(
-                text = "Sổ tiêm và thuốc",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // ==== Bộ lọc thú cưng ====
-        FlowRow(
-            mainAxisSpacing = 8.dp,
-            crossAxisSpacing = 8.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            allPets.forEach { pet ->
-                PetFilterChip(
-                    text = pet,
-                    selected = pet == selectedPet,
-                    onClick = { selectedPet = pet }
-                )
-            }
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        // ==== Danh sách chia theo năm ====
-        LazyColumn(
-            modifier = Modifier.weight(1f)
-        ) {
-            grouped.forEach { (year, list) ->
-                item {
-                    Text(
-                        "Năm $year",
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Sổ tiêm và thuốc",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = Color.Black,
-                        modifier = Modifier.padding(vertical = 6.dp)
-                    )
-                }
-
-                items(list) { item ->
-                    TiemThuocCard(item = item, navController = navController)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        // ==== Nút Thêm ====
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            FloatingActionButton(
-                onClick = { navController?.navigate("add_record") },
-                containerColor = Color(0xFFB6F2B8),
-                shape = CircleShape,
-                modifier = Modifier.size(58.dp)
+                        color = Color.Black)
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController?.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.Black)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = lightPink
+                )
+            )
+        },
+        floatingActionButtonPosition = FabPosition.End,
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(Color.White),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.Black, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Home,
+                    contentDescription = "Trang chủ",
+                    tint = Color(0xFF7B1FA2),
+                    modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Notifications,
+                    contentDescription = "Thông báo",
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Person,
+                    contentDescription = "Hồ sơ",
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(32.dp))
             }
         }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xFFFFF6C2),
+                            Color(0xFFFFD6EC),
+                            Color(0xFFEAD6FF)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                // ==== Bộ lọc thú cưng ====
+                FlowRow(
+                    mainAxisSpacing = 8.dp,
+                    crossAxisSpacing = 8.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    allPets.forEach { pet ->
+                        PetFilterChip(
+                            text = pet,
+                            selected = pet == selectedPet,
+                            onClick = { selectedPet = pet }
+                        )
+                    }
+                }
 
-        Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
 
-        BottomNavigationBarStyled()
+                // ==== Danh sách chia theo năm ====
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    grouped.forEach { (year, list) ->
+                        item {
+                            Text(
+                                "Năm $year",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = Color.Black,
+                                modifier = Modifier.padding(vertical = 6.dp)
+                            )
+                        }
+                        items(list) { item ->
+                            TiemThuocCard(item = item, navController = navController)
+                        }
+                    }
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            FloatingActionButton(
+                                onClick = { navController?.navigate("add_record") },
+                                containerColor = Color(0xFF00AA00)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add")
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 // ----------------- COMPONENTS -----------------
-
 @Composable
 fun PetFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
@@ -144,7 +190,7 @@ fun PetFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
                 shape = RoundedCornerShape(20.dp)
             )
             .background(
-                color = Color.White, // ✔️ luôn trắng
+                color = Color.White,
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable { onClick() }
@@ -167,7 +213,9 @@ fun TiemThuocCard(item: TiemThuocItem, navController: NavController?) {
             .padding(vertical = 5.dp)
             .clickable {
                 val encodedPetName = Uri.encode(item.petName)
-                val encodedRecordType = Uri.encode(if (item.title.startsWith("Tiêm")) "Tiêm" else "Thuốc")
+                val encodedRecordType = Uri.encode(
+                    if (item.title.startsWith("Tiêm")) "Tiêm" else "Thuốc"
+                )
                 val encodedRecordName = Uri.encode(item.title)
                 val encodedDate = Uri.encode(item.date)
                 val encodedPlace = Uri.encode(item.place)
