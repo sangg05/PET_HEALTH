@@ -6,6 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pet_health.ui.screen.ReminderFormScreen
+import com.example.pet_health.ui.screen.ReminderScreen
 import com.example.pet_health.ui.screens.*
 
 
@@ -24,6 +26,9 @@ fun AppScreen() {
         composable("add_pet") { AddPetScreen(navController) }
         composable("health_records") { HealthRecordScreen(navController) }
         composable("add_health_record") { AddHealthRecordScreen(navController) }
+        composable("reminder") { ReminderScreen(navController) }
+
+        composable("reminder_form") { ReminderFormScreen(navController) }
 
         composable(
             route = "pet_profile?name={name}&breed={breed}&age={age}&imageRes={imageRes}",

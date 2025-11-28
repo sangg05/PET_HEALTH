@@ -145,7 +145,8 @@ fun HomeScreen(navController: NavController) {
                         ) {
                             FeatureButton("Hồ sơ\nsức khỏe", R.drawable.ic_health, Color(0xFFD32F2F))
                             { navController.navigate("health_records")}
-                            FeatureButton("Nhắc lịch", R.drawable.ic_clock, Color(0xFFFF8F00)) {}
+                            FeatureButton("Nhắc lịch", R.drawable.ic_clock, Color(0xFFFF8F00))
+                            { navController.navigate("reminder")}
                             FeatureButton("Theo dõi\nsức khỏe", R.drawable.ic_bell, Color(0xFFFFC107)) {}
                         }
 
