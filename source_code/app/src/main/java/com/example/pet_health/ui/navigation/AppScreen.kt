@@ -1,14 +1,23 @@
 package com.example.pet_health.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pet_health.repository.PetRepository
+import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.ReminderFormScreen
 import com.example.pet_health.ui.screen.ReminderScreen
+import com.example.pet_health.ui.screen.WeightHeightScreen
 import com.example.pet_health.ui.screens.*
+import com.example.pet_health.ui.viewmodel.PetViewModel
+import com.example.pet_health.ui.viewmodel.PetViewModelFactory
+import pet_health.data.local.AppDatabase
 
 
 @Composable
@@ -27,9 +36,27 @@ fun AppScreen() {
         composable("health_records") { HealthRecordScreen(navController) }
         composable("add_health_record") { AddHealthRecordScreen(navController) }
         composable("reminder") { ReminderScreen(navController) }
-
         composable("reminder_form") { ReminderFormScreen(navController) }
-
+        composable("health_dashboard") {
+            val context = LocalContext.current
+            val db = AppDatabase.getDatabase(context) // gọi database
+            val dao = db.petDao() // lấy PetDao
+            val repository = PetRepository(dao)
+            val petViewModel: PetViewModel = viewModel(
+                factory = PetViewModelFactory(repository)
+            )
+            HealthTrackingScreen(petViewModel, navController)
+        }
+        composable(
+            "weight_height/{petId}",
+            arguments = listOf(navArgument("petId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val petId = backStackEntry.arguments?.getString("petId")
+            WeightHeightScreen(
+                navController = navController, // thêm dòng này
+                petId = petId
+            )
+        }
         composable(
             route = "pet_profile?name={name}&breed={breed}&age={age}&imageRes={imageRes}",
             arguments = listOf(

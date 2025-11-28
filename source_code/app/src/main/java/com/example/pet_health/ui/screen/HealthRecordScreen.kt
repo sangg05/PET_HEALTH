@@ -45,7 +45,7 @@ fun HealthRecordScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Danh sách thú cưng", fontWeight = FontWeight.Bold, color = Color.Black) },
+                title = { Text("Hồ sơ sức khỏe", fontWeight = FontWeight.Bold, color = Color.Black) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)

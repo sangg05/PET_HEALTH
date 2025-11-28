@@ -2,6 +2,7 @@ package com.example.pet_health.ui.viewmodel
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.entity.SymptomLogEntity
@@ -169,6 +170,18 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
     }
 
 }
+class PetViewModelFactory(
+    private val repository: PetRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PetViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PetViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
 
 
 

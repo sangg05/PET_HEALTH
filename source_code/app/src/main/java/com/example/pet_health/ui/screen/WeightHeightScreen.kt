@@ -2,12 +2,16 @@ package com.example.pet_health.ui.screen
 
 import android.app.DatePickerDialog
 import android.widget.DatePicker
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -22,8 +27,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.pet_health.ui.screens.lightPink
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 data class WeightHeightRecord(
     val date: String, // dd/MM/yyyy
@@ -55,9 +64,10 @@ fun FilterTab(
 ) {
     Box(
         modifier = modifier
-            .padding(horizontal = 6.dp)
+            .padding(horizontal = 4.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
+            .border(1.dp, Color.Black.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -70,6 +80,7 @@ fun FilterTab(
         )
     }
 }
+
 
 @Composable
 fun RecordItem(record: WeightHeightRecord) {
@@ -162,17 +173,19 @@ fun DatePickerField(
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
-
 @Composable
-fun WeightHeightScreen(petId: String?) {
+fun WeightHeightScreen(navController: NavController, petId: String?, onAddRecord: () -> Unit = {}) {
     var selectedTab by remember { mutableStateOf("Ngày") }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
 
-
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-    val filteredData = mockData.filter { record ->
+    // Dùng mutableStateListOf để có thể xóa
+    val records = remember { mutableStateListOf(*mockData.toTypedArray()) }
+
+    // Lọc dữ liệu
+    val filteredData = records.filter { record ->
         val recordDate = sdf.parse(record.date) ?: return@filter false
         val start = if (startDate.isNotEmpty()) sdf.parse(startDate) else null
         val end = if (endDate.isNotEmpty()) sdf.parse(endDate) else null
@@ -188,25 +201,13 @@ fun WeightHeightScreen(petId: String?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        "Cân nặng và chiều cao",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                },
+                title = { Text("Cân nặng và chiều cao", fontWeight = FontWeight.Bold, color = Color.Black) },
                 navigationIcon = {
-                    IconButton(onClick = { /* Navigate back */ }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = darkPink
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
         },
         bottomBar = {
@@ -227,71 +228,89 @@ fun WeightHeightScreen(petId: String?) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(lightPink)
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
+                    )
+                )
         ) {
-            // --- Chọn khoảng thời gian ---
+            // --- Khoảng thời gian ---
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Chọn khoảng thời gian",
-                    color = TextDark,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Text("Chọn khoảng thời gian", fontWeight = FontWeight.Bold, color = TextDark, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(8.dp))
-                DatePickerField(
-                    label = "Từ ngày",
-                    selectedDate = startDate,
-                    onDateSelected = { startDate = it }
-                )
+                DatePickerField("Từ ngày", startDate) { startDate = it }
                 Spacer(modifier = Modifier.height(8.dp))
-                DatePickerField(
-                    label = "Đến ngày",
-                    selectedDate = endDate,
-                    onDateSelected = { endDate = it }
-                )
+                DatePickerField("Đến ngày", endDate) { endDate = it }
             }
 
             // --- Bộ lọc ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 15.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                FilterTab(
-                    text = "Ngày",
-                    modifier = Modifier.weight(1f)
-                ) { selectedTab = "Ngày" }
-
-                FilterTab(
-                    text = "Cân nặng",
-                    modifier = Modifier.weight(1f)
-                ) { selectedTab = "Cân nặng" }
-
-                FilterTab(
-                    text = "Chiều Cao",
-                    modifier = Modifier.weight(1f)
-                ) { selectedTab = "Chiều Cao" }
+                FilterTab("Ngày", modifier = Modifier.weight(1f)) { selectedTab = "Ngày" }
+                FilterTab("Cân nặng", modifier = Modifier.weight(1f)) { selectedTab = "Cân nặng" }
+                FilterTab("Chiều cao", modifier = Modifier.weight(1f)) { selectedTab = "Chiều Cao" }
             }
 
-            // --- Danh sách dữ liệu ---
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
-            ) {
-                items(filteredData) { record ->
-                    RecordItem(record)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // --- Danh sách bản ghi với nút xóa ---
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+                filteredData.forEach { record ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF6FF)), // pastel nhẹ
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        border = BorderStroke(1.dp, Color(0xFFCE3CCB).copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(record.date, fontWeight = FontWeight.Bold, color = TextDark)
+                            }
+                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(record.weight, fontWeight = FontWeight.Bold, color = TextDark)
+                            }
+                            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(record.height, fontWeight = FontWeight.Bold, color = TextDark)
+                            }
+                            IconButton(
+                                onClick = { records.remove(record) },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Xóa", tint = Color(0xFFE74C3C))
+                            }
+                        }
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
 fun WeightHeightScreenPreview() {
+    val navController = rememberNavController() // tạo NavController giả
     MaterialTheme {
-        WeightHeightScreen( petId = "p1")
+        WeightHeightScreen(
+            navController = navController,
+            petId = "p1"
+        )
     }
 }

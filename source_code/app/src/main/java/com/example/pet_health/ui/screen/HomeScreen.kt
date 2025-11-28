@@ -147,7 +147,8 @@ fun HomeScreen(navController: NavController) {
                             { navController.navigate("health_records")}
                             FeatureButton("Nhắc lịch", R.drawable.ic_clock, Color(0xFFFF8F00))
                             { navController.navigate("reminder")}
-                            FeatureButton("Theo dõi\nsức khỏe", R.drawable.ic_bell, Color(0xFFFFC107)) {}
+                            FeatureButton("Theo dõi\nsức khỏe", R.drawable.ic_bell, Color(0xFFFFC107))
+                            {navController.navigate("health_dashboard")}
                         }
 
                         Spacer(modifier = Modifier.height(18.dp))
