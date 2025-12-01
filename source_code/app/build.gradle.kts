@@ -82,7 +82,7 @@ dependencies {
 
     implementation("com.squareup.retrofit2:retrofit:${retrofitVersion}")
     implementation("com.squareup.retrofit2:converter-gson:${retrofitVersion}")
-    implementation("androidx.navigation:navigation-compose:2.7.0")
+    implementation("androidx.navigation:navigation-compose:2.7.3")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0-alpha01")
     implementation("com.google.accompanist:accompanist-flowlayout:0.30.1")
     implementation("com.google.accompanist:accompanist-flowlayout:0.32.0")

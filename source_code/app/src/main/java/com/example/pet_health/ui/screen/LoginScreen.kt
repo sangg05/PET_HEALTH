@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -21,10 +22,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.pet_health.R
 
 @Composable
 fun LoginScreen(
+    navController: NavController,
     onLoginClick: (String, String) -> Unit,
     onNavigateRegister: () -> Unit,
     onNavigateForgot: () -> Unit
@@ -48,14 +51,26 @@ fun LoginScreen(
         Spacer(Modifier.height(40.dp))
 
         // ------ LOGO HÌNH TRÒN ------
-        Image(
-            painter = painterResource(id = R.drawable.pet_logo),
-            contentDescription = null,
+        Box(
             modifier = Modifier
-                .size(180.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+                .size(160.dp)
+                .clip(CircleShape)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.pet_logo),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = 1.3f // phóng to ảnh theo chiều ngang
+                        scaleY = 1.3f // phóng to ảnh theo chiều dọc
+                        translationX = -20f
+                        translationY = 20f
+                    }
+                    .clip(CircleShape)
+            )
+        }
 
 
         Spacer(Modifier.height(24.dp))
@@ -73,7 +88,7 @@ fun LoginScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            placeholder = { Text("Nhập email") },
+            placeholder = { Text("Nhập email/số điện thoại") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -142,7 +157,11 @@ fun LoginScreen(
         Spacer(Modifier.height(10.dp))
 
         Button(
-            onClick = { onLoginClick(email, password) },
+            onClick = {
+                onLoginClick(email, password) // xử lý login
+                navController.navigate("home") { // chuyển sang Home
+                popUpTo("auth") { inclusive = true } // xóa Login khỏi backstack
+                }},
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),

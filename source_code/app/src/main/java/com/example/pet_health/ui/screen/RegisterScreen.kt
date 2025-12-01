@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ fun RegisterScreen(
     val buttonColor = Color(0xFFDB91D6)
 
     var email by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
     var confirmPass by remember { mutableStateOf("") }
 
@@ -42,14 +44,26 @@ fun RegisterScreen(
         Spacer(Modifier.height(30.dp))
 
         // ------ LOGO HÌNH TRÒN ------
-        Image(
-            painter = painterResource(id = R.drawable.pet_logo),
-            contentDescription = null,
+        Box(
             modifier = Modifier
                 .size(160.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+                .clip(CircleShape)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.pet_logo),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = 1.3f // phóng to ảnh theo chiều ngang
+                        scaleY = 1.3f // phóng to ảnh theo chiều dọc
+                        translationX = -20f
+                        translationY = 20f
+                    }
+                    .clip(CircleShape)
+            )
+        }
 
         Spacer(Modifier.height(20.dp))
 
@@ -74,6 +88,25 @@ fun RegisterScreen(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_email),
                     contentDescription = "email",
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        // ------------ Tên hiện thị ------------
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            placeholder = { Text("Tên hiển thị") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_name),
+                    contentDescription = "name",
                     modifier = Modifier.size(22.dp)
                 )
             }
