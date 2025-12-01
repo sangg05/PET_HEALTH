@@ -150,7 +150,20 @@ fun AppScreen() {
         }
         composable("account") {
             AccountManagementScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateMore = { navController.navigate("account_actions") }
+            )
+        }
+        composable("account_actions") {
+            AccountActionsScreen(
+                onUpdateInfo = { /* TODO: điều hướng sửa info */ },
+                onUpdateAvatar = { /* TODO */ },
+                onChangePassword = { /* TODO */ },
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("account") { inclusive = true }  // xoá stack để tránh quay lại
+                    }
+                }
             )
         }
     }
