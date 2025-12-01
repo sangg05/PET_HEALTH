@@ -1,16 +1,17 @@
 package com.example.pet_health.ui.navigation
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.pet_health.repository.PetRepository
-import com.example.pet_health.ui.screen.HealthTrackingScreen
+//import com.example.pet_health.repository.PetRepository
+//import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.ReminderFormScreen
 import com.example.pet_health.ui.screen.ReminderScreen
 import com.example.pet_health.ui.screen.TiemThuocListScreen
@@ -18,20 +19,25 @@ import com.example.pet_health.ui.screen.WeightHeightScreen
 import com.example.pet_health.ui.screen.AddRecordScreen
 import com.example.pet_health.ui.screen.LoginScreen
 import com.example.pet_health.ui.screens.*
-import com.example.pet_health.ui.viewmodel.PetViewModel
-import com.example.pet_health.ui.viewmodel.PetViewModelFactory
-import pet_health.data.local.AppDatabase
+//import com.example.pet_health.ui.viewmodel.PetViewModel
+//import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import androidx.navigation.compose.navigation
+import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun AppScreen() {
 
     val navController = rememberNavController()
-
+    val context = LocalContext.current
+    val userRepository = remember { UserRepository(context) }
+    val scope = rememberCoroutineScope()
     NavHost(
         navController = navController,
         startDestination = "auth"
@@ -41,10 +47,18 @@ fun AppScreen() {
 
             composable("login") {
                 LoginScreen(
-                    navController = navController, //
+                    navController = navController,
+                    userRepository = userRepository,
                     onLoginClick = { email, pass ->
-                        navController.navigate("main") {
-                            popUpTo("auth") { inclusive = true }
+                        scope.launch {
+                            val (success, msg) = userRepository.loginUser(email, pass)
+                            if (success) {
+                                navController.navigate("home") {
+                                    popUpTo("auth") { inclusive = true }
+                                }
+                            } else {
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     onNavigateRegister = { navController.navigate("register") },
@@ -53,10 +67,18 @@ fun AppScreen() {
             }
             composable("register") {
                 RegisterScreen(
-                    onRegisterSuccess = {
-                        navController.popBackStack() // quay lại login
+                    userRepository = userRepository,
+                    onNavigateLogin = {
+                        // Điều hướng khi người dùng click "Đã có tài khoản? Đăng nhập"
+                        navController.navigate("login") {
+                            popUpTo("register") { inclusive = true } // xóa register khỏi back stack
+                        }
                     },
-                    onNavigateLogin = { navController.popBackStack() }
+                    onRegisterSuccess = {
+                        navController.navigate("login") {
+                            popUpTo("register") { inclusive = true }
+                        }
+                    }
                 )
             }
             composable("forgot") {
@@ -86,28 +108,40 @@ fun AppScreen() {
                     }
                 )
             }
-            composable("main") {
-                HomeScreen(navController)
+//            composable("main") {
+//                HomeScreen(navController)
+//            }
+
+
+            composable("home") {
+                HomeScreen(
+                    navController = navController,
+                    userRepository = userRepository // truyền vào đây
+                )
             }
-
-
-            composable("home") { HomeScreen(navController) }
+            composable("account") {
+                AccountManagementScreen(
+                    navController = navController,
+                    userRepository = userRepository,
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable("pet_list") { PetListScreen(navController) }
             composable("add_pet") { AddPetScreen(navController) }
             composable("health_records") { HealthRecordScreen(navController) }
             composable("add_health_record") { AddHealthRecordScreen(navController) }
             composable("reminder") { ReminderScreen(navController) }
             composable("reminder_form") { ReminderFormScreen(navController) }
-            composable("health_dashboard") {
-                val context = LocalContext.current
-                val db = AppDatabase.getDatabase(context) // gọi database
-                val dao = db.petDao() // lấy PetDao
-                val repository = PetRepository(dao)
-                val petViewModel: PetViewModel = viewModel(
-                    factory = PetViewModelFactory(repository)
-                )
-                HealthTrackingScreen(petViewModel, navController)
-            }
+//            composable("health_dashboard") {
+//                val context = LocalContext.current
+//                val db = AppDatabase.getDatabase(context) // gọi database
+//                val dao = db.petDao() // lấy PetDao
+//                val repository = PetRepository(dao)
+//                val petViewModel: PetViewModel = viewModel(
+//                    factory = PetViewModelFactory(repository)
+//                )
+//                HealthTrackingScreen(petViewModel, navController)
+//            }
             composable(
                 "weight_height/{petId}",
                 arguments = listOf(navArgument("petId") { type = NavType.StringType })

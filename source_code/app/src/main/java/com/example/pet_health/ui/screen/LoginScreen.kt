@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -24,21 +26,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.pet_health.R
+import com.example.pet_health.data.repository.UserRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     navController: NavController,
     onLoginClick: (String, String) -> Unit,
     onNavigateRegister: () -> Unit,
+    userRepository: UserRepository,
     onNavigateForgot: () -> Unit
 ) {
     val background = Color(0xFFF3CCE4)
     val buttonColor = Color(0xFFDB91D6)
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
+
+
 
     Column(
         modifier = Modifier
@@ -158,10 +170,8 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                onLoginClick(email, password) // xử lý login
-                navController.navigate("home") { // chuyển sang Home
-                popUpTo("auth") { inclusive = true } // xóa Login khỏi backstack
-                }},
+                onLoginClick(email, password)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),

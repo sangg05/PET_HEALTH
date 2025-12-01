@@ -33,12 +33,14 @@ import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.pet_health.R
+import com.example.pet_health.data.repository.UserRepository
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController,userRepository: UserRepository) {
     val scrollState = rememberScrollState()
     val logoSize = 50.dp
     val context = LocalContext.current
+
 
     Scaffold(
         bottomBar = {
@@ -68,7 +70,8 @@ fun HomeScreen(navController: NavController) {
                     )
                 }
 
-                IconButton(onClick = { /* xử lý Profile */ }) {
+                IconButton(onClick = {navController.navigate("account")
+                }) {
                     Icon(
                         Icons.Default.Person,
                         contentDescription = "Hồ sơ",
@@ -118,8 +121,9 @@ fun HomeScreen(navController: NavController) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val user = userRepository.currentUser.value
                         Text(
-                            text = "HELLO, Bạn!",
+                            text = "Xin chào, ${user?.name ?: "Bạn"}!",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

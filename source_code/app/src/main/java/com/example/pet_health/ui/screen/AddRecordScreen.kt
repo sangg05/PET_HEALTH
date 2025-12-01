@@ -154,8 +154,13 @@ fun AddRecordScreen(navController: NavController) {
         { padding ->
             Column(
                 modifier = Modifier
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
+                        )
+                    )
                     .padding(padding)
-                    .padding(16.dp)
+                    .padding(10.dp)
                     .verticalScroll(rememberScrollState())
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.Top

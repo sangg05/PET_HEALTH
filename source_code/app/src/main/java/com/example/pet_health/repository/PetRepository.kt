@@ -1,44 +1,63 @@
-package com.example.pet_health.repository
+package com.example.pet_health.data.repository
 
-import com.example.pet_health.data.local.dao.PetDao
-import com.example.pet_health.data.entity.PetEntity
-import com.example.pet_health.data.entity.SymptomLogEntity
-import com.example.pet_health.data.local.dao.SymptomLogDao
-import kotlinx.coroutines.flow.Flow
-import java.util.UUID
+import android.content.Context
+import android.util.Log
+import androidx.compose.runtime.mutableStateOf
+import com.example.pet_health.data.entity.UserEntity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
+import pet_health.data.local.AppDatabase
 
 
-class PetRepository(private val dao: PetDao) {
+class UserRepository(private val context: Context) {
 
-    suspend fun getPetsByUser(userId: String, collapsed: Boolean = false): List<PetEntity> {
-        val allPets = dao.getPetsByUser(userId)
-        return if (collapsed) allPets.take(3) else allPets
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+    private val database = AppDatabase.getDatabase(context)
+    private val userDao = database.userDao()
+
+    suspend fun registerUser(name: String, email: String, password: String): Boolean {
+        return try {
+            val result = auth.createUserWithEmailAndPassword(email, password).await()
+            val uid = result.user?.uid ?: return false
+            val user = UserEntity(userId = uid, name = name, email = email, passwordHash = password)
+
+            // Lưu vào Room luôn
+            withContext(Dispatchers.IO) { userDao.insertUser(user) }
+
+            // Lưu Firestore async, không block UI
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    firestore.collection("users").document(uid).set(user).await()
+                } catch(e: Exception) {}
+            }
+            true // trả về thành công ngay
+        } catch (e: Exception) {
+            false
+        }
     }
 
-    suspend fun insertPet(pet: PetEntity) = dao.insertPet(pet)
-    suspend fun updatePet(pet: PetEntity) = dao.updatePet(pet)
-    suspend fun deletePet(pet: PetEntity) = dao.deletePet(pet)
-    suspend fun getPetById(petId: String): PetEntity? {
-        return dao.getPet(petId)
+    var currentUser = mutableStateOf<UserEntity?>(null)
+        private set
+    suspend fun loginUser(email: String, password: String): Pair<Boolean, String> {
+        return try {
+            auth.signInWithEmailAndPassword(email, password).await()
+            val uid = auth.currentUser!!.uid
+            val snapshot = firestore.collection("users").document(uid).get().await()
+            val user = snapshot.toObject(UserEntity::class.java)
+            user?.let {
+                withContext(Dispatchers.IO) { userDao.insertUser(it) }
+                currentUser.value = it // cập nhật state
+            }
+            Pair(true, "Đăng nhập thành công")
+        } catch (e: Exception) {
+            Pair(false, e.message ?: "Lỗi đăng nhập")
+        }
     }
 }
-class SymptomRepository(private val dao: SymptomLogDao) {
-
-    fun getSymptomLogs(petId: String): Flow<List<SymptomLogEntity>> {
-        return dao.getLogsByPet(petId)
-    }
-
-    suspend fun addSymptom(petId: String, name: String, desc: String) {
-        // Thêm UUID cho id
-        val newSymptom = SymptomLogEntity(
-            id = UUID.randomUUID().toString(),
-            petId = petId,
-            name = name,
-            description = desc,
-            timestamp = System.currentTimeMillis()
-        )
-        dao.insertLog(newSymptom)
-    }
-}
-
 
