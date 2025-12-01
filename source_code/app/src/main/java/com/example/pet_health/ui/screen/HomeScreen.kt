@@ -231,7 +231,9 @@ fun HomeScreen(navController: NavController) {
 
             NavigationBarItem(
                 selected = false,
-                onClick = {},
+                onClick = {
+                    navController.navigate("account")
+                },
                 icon = {
                     Icon(
                         painterResource(id = R.drawable.ic_user),
@@ -241,6 +243,7 @@ fun HomeScreen(navController: NavController) {
                 },
                 label = { Text("Tài khoản", fontSize = 13.sp) }
             )
+
         }
     }
 }

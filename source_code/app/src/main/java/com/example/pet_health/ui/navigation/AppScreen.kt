@@ -148,5 +148,10 @@ fun AppScreen() {
                 navController = navController
             )
         }
+        composable("account") {
+            AccountManagementScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }
