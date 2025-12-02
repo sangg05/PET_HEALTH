@@ -156,6 +156,7 @@ fun AppScreen() {
         }
         composable("account_actions") {
             AccountActionsScreen(
+                onBack = { navController.popBackStack() },
                 onUpdateInfo = { /* TODO: điều hướng sửa info */ },
                 onUpdateAvatar = { /* TODO */ },
                 onChangePassword = { /* TODO */ },

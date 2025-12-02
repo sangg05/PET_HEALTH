@@ -61,7 +61,7 @@ fun AccountActionsScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // --------- Cập nhật thông tin ---------
             Card(
