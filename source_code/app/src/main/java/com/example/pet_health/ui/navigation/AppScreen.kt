@@ -159,11 +159,21 @@ fun AppScreen() {
                 onBack = { navController.popBackStack() },
                 onUpdateInfo = { /* TODO: điều hướng sửa info */ },
                 onUpdateAvatar = { /* TODO */ },
-                onChangePassword = { /* TODO */ },
+                onChangePassword = {
+                    navController.navigate("change_password")
+                },
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo("account") { inclusive = true }  // xoá stack để tránh quay lại
                     }
+                }
+            )
+        }
+        composable("change_password") {
+            ChangePasswordScreen(
+                onBack = { navController.popBackStack() },
+                onPasswordChanged = {
+                    navController.popBackStack()
                 }
             )
         }
