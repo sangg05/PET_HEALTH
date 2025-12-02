@@ -1,4 +1,4 @@
-package com.example.pet_health.ui.screens
+package com.example.pet_health.ui.screen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

@@ -1,4 +1,4 @@
-package com.example.pet_health.ui.screens
+package com.example.pet_health.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +32,7 @@ fun ChangePasswordScreen(
     var showOld by remember { mutableStateOf(false) }
     var showNew by remember { mutableStateOf(false) }
     var showConfirm by remember { mutableStateOf(false) }
+    val background = Color(0xFFF3CCE4)
 
     Scaffold(
         topBar = {
@@ -46,7 +47,8 @@ fun ChangePasswordScreen(
                     containerColor = Color(0xFFE5A8C8)
                 )
             )
-        }
+        },
+        containerColor = background
     ) { padding ->
 
         Column(

@@ -52,10 +52,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pet_health.ui.screen.AccountActionsScreen
+import com.example.pet_health.ui.screen.AccountManagementScreen
+import com.example.pet_health.ui.screen.ChangePasswordScreen
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.LoginScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
+import com.example.pet_health.ui.screen.UpdateInfoScreen
 import com.example.pet_health.ui.screens.*
 
 @Composable
@@ -157,7 +161,9 @@ fun AppScreen() {
         composable("account_actions") {
             AccountActionsScreen(
                 onBack = { navController.popBackStack() },
-                onUpdateInfo = { /* TODO: điều hướng sửa info */ },
+                onUpdateInfo = {
+                    navController.navigate("update_info")
+                },
                 onUpdateAvatar = { /* TODO */ },
                 onChangePassword = {
                     navController.navigate("change_password")
@@ -173,6 +179,14 @@ fun AppScreen() {
             ChangePasswordScreen(
                 onBack = { navController.popBackStack() },
                 onPasswordChanged = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable("update_info") {
+            UpdateInfoScreen(
+                onBack = { navController.popBackStack() },
+                onSave = {
                     navController.popBackStack()
                 }
             )
