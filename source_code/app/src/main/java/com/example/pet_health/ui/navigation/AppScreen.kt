@@ -230,9 +230,9 @@ fun AppScreen() {
             }
             composable("medical_records") { TiemThuocListScreen(navController) }
             composable("add_record") { AddRecordScreen(navController) }
-            }
         }
     }
+}
 
 
 
