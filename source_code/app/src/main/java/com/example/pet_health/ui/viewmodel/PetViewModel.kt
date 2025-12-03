@@ -1,189 +1,322 @@
-//package com.example.pet_health.ui.viewmodel
-//
-//import androidx.compose.runtime.mutableStateOf
-//import androidx.lifecycle.ViewModel
-//import androidx.lifecycle.ViewModelProvider
-//import androidx.lifecycle.viewModelScope
-//import com.example.pet_health.data.entity.PetEntity
-//import com.example.pet_health.data.entity.SymptomLogEntity
-//import com.example.pet_health.data.entity.UserEntity
-//import com.example.pet_health.repository.PetRepository
-//import kotlinx.coroutines.launch
-//
-//class PetViewModel(private val repository: PetRepository) : ViewModel() {
-//
-//    var pets = mutableStateOf(listOf<PetEntity>())
-//        private set
-//
-//    var selectedPet = mutableStateOf<PetEntity?>(null)
-//        private set
-//
-//    var isExpanded = mutableStateOf(false)
-//        private set
-//    var symptomMap = mutableStateOf<Map<String, List<SymptomLogEntity>>>(emptyMap())
-//        private set
-//
-//
-//    init {
-//        prepopulateData()
-//        prepopulateSymptoms()
-//
-//    }
-//
-//    private fun prepopulateData() {
-//        // Tạo User giả (chỉ để tham khảo, không dùng DB)
-//        val userId = "u1"
-//        val user = UserEntity(
-//            userId = userId,
-//            name = "Nguyen Van A",
-//            email = "test@example.com",
-//            passwordHash = "123456"
-//        )
-//
-//        // Tạo Pet mẫu
-//        val petList = listOf(
-//            PetEntity(
-//                petId = "p1",
-//                userId = user.userId,
-//                name = "Cún con",
-//                species = "Chó",
-//                breed = "Phốc sóc",
-//                birthDate = System.currentTimeMillis(),
-//                weightKg = 2.5f,
-//                sizeCm =3.5f,
-//                healthStatus = "Khỏe"
-//            ),
-//            PetEntity(
-//                petId = "p2",
-//                userId = user.userId,
-//                name = "Cún con",
-//                species = "Chó",
-//                breed = "Phốc sóc",
-//                birthDate = System.currentTimeMillis(),
-//                weightKg = 2.5f,
-//                sizeCm =2.5f,
-//                healthStatus = "Khỏe"
-//            ),
-//            PetEntity(
-//                petId = "p3",
-//                userId = user.userId,
-//                name = "Cún con",
-//                species = "Chó",
-//                breed = "Phốc sóc",
-//                birthDate = System.currentTimeMillis(),
-//                weightKg = 2.5f,
-//                sizeCm =4.5f,
-//                healthStatus = "Khỏe"
-//            ),
-//            PetEntity(
-//                petId = "p4",
-//                userId = user.userId,
-//                name = "Cún con",
-//                species = "Chó",
-//                breed = "Phốc sóc",
-//                birthDate = System.currentTimeMillis(),
-//                weightKg = 2.5f,
-//                sizeCm =3.5f,
-//                healthStatus = "Khỏe"
-//            ),
-//            PetEntity(
-//                petId = "p5",
-//                userId = user.userId,
-//                name = "Cún con",
-//                species = "Chó",
-//                breed = "Phốc sóc",
-//                birthDate = System.currentTimeMillis(),
-//                weightKg = 2.5f,
-//                sizeCm =3.5f,
-//                healthStatus = "Khỏe"
-//            ),
-//            PetEntity(
-//                petId = "p6",
-//                userId = user.userId,
-//                name = "Mèo con",
-//                species = "Mèo",
-//                breed = "Anh lông ngắn",
-//                birthDate = System.currentTimeMillis(),
-//                weightKg = 1.2f,
-//                sizeCm =3.5f,
-//                healthStatus = "Khỏe"
-//            )
-//
-//        )
-//        pets.value = petList
-//    }
-//
-//    // Tạo triệu chứng mẫu cho từng pet
-//    private fun prepopulateSymptoms() {
-//        val map = mutableMapOf<String, List<SymptomLogEntity>>()
-//
-//        pets.value.forEach { pet ->
-//            val list = when (pet.petId) {
-//                "p1" -> listOf(
-//                    SymptomLogEntity("s1", pet.petId, "Ho nhẹ", "Ho vào buổi sáng 2 lần", System.currentTimeMillis() - 86_400_000),
-//                    SymptomLogEntity("s2", pet.petId, "Biếng ăn", "Ăn ít hơn bình thường", System.currentTimeMillis() - 43_200_000)
-//                )
-//                "p2" -> listOf(
-//                    SymptomLogEntity("s3", pet.petId, "Nôn nhẹ", "Nôn 1 lần sau khi ăn", System.currentTimeMillis() - 7_200_000)
-//                )
-//                "p6" -> listOf(
-//                    SymptomLogEntity("s4", pet.petId, "Mệt mỏi", "Ít vận động, nằm nhiều", System.currentTimeMillis() - 3_600_000)
-//                )
-//                else -> emptyList()
-//            }
-//            map[pet.petId] = list
-//        }
-//
-//        symptomMap.value = map
-//    }
-//
-//        fun selectPet(pet: PetEntity?) {
-//        selectedPet.value = pet
-//    }
-//    fun toggleExpand() {
-//        isExpanded.value = !isExpanded.value
-//    }
-//
-//    fun updatePet(updatedPet: PetEntity) {
-//        pets.value = pets.value.map { if (it.petId == updatedPet.petId) updatedPet else it }
-//    }
-//
-//    fun loadPetById(petId: String) {
+package com.example.pet_health.ui.viewmodel
+
+import android.content.Context
+import android.net.Uri
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.pet_health.data.entity.PetEntity
+import com.example.pet_health.data.repository.PetRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import java.io.File
+import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.tasks.await
+import java.util.UUID
+
+
+class PetViewModel(private val repository: PetRepository) : ViewModel() {
+
+    var tempImageUri: Uri? = null
+    private val _pets = mutableStateOf<List<PetEntity>>(emptyList())
+    val pets: State<List<PetEntity>> = _pets
+
+    private val _isLoading = mutableStateOf(true)
+    val isLoading: State<Boolean> = _isLoading
+
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
+    init {
+        fetchPets()
+    }
+
+    private fun fetchPets() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _pets.value = repository.getAllPets()
+            _isLoading.value = false
+        }
+    }
+
+    // Thêm pet: Room + Firebase
+//    fun addPet(
+//        pet: PetEntity,
+//        context: Context,
+//        imageUri: Uri?,
+//        onDone: () -> Unit = {}
+//    ) {
 //        viewModelScope.launch {
-//            selectedPet.value = repository.getPetById(petId)
-//                ?: pets.value.find { it.petId == petId } // fallback nếu không có repo
+//            _isLoading.value = true
+//
+//            // 1. Upload ảnh nếu có
+//            val petWithImage = if (imageUri != null) {
+//                val storageRef = FirebaseStorage.getInstance().reference.child("pets/${pet.petId}.jpg")
+//                val downloadUrl = storageRef.putFile(imageUri)
+//                    .continueWithTask { task ->
+//                        if (!task.isSuccessful) throw task.exception!!
+//                        storageRef.downloadUrl
+//                    }.await()
+//
+//                pet.copy(imageUrl = downloadUrl.toString())
+//            } else {
+//                pet
+//            }
+//
+//            // 2. Lưu Room
+//            repository.insertPet(petWithImage)
+//
+//            // 3. Lưu Firestore
+//            uploadPetToFirebase(petWithImage)
+//
+//            // 4. Cập nhật state để UI refresh ngay
+//            _pets.value = _pets.value + petWithImage
+//
+//            _isLoading.value = false
+//
+//            // 5. Callback (ví dụ navController.popBackStack())
+//            onDone()
 //        }
 //    }
-//    // Lấy danh sách triệu chứng của pet hiện tại
-//    fun getSymptomsOfSelectedPet(): List<SymptomLogEntity> {
-//        val petId = selectedPet.value?.petId ?: return emptyList()
-//        return symptomMap.value[petId] ?: emptyList()
+
+    fun addOrUpdatePet(
+        context: Context,
+        name: String,
+        species: String,
+        breed: String = "",
+        birthDate: Long,
+        color: String? = null,
+        weightKg: Double,
+        sizeCm: Double? = null,
+        adoptionDate: Long? = null,
+        imageUri: Uri? = null, // Ảnh mới chọn
+        existingImageUrl: String? = null, // Ảnh cũ nếu edit
+        editMode: Boolean = false,
+        petId: String? = null, // Chỉ dùng khi edit
+        onDone: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+
+            // 1. Upload ảnh nếu có ảnh mới được chọn
+            val finalImageUrl: String? = if (imageUri != null && imageUri.toString() != existingImageUrl) {
+                // Có ảnh mới được chọn -> upload
+                try {
+                    val storage = FirebaseStorage.getInstance()
+                    val ref = storage.reference.child("pets/${UUID.randomUUID()}.jpg")
+                    ref.putFile(imageUri).await()
+                    ref.downloadUrl.await().toString()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    existingImageUrl // fallback nếu upload fail
+                }
+            } else {
+                // Không có ảnh mới -> giữ ảnh cũ
+                existingImageUrl
+            }
+
+            // 2. Tạo PetEntity
+            val pet = PetEntity(
+                petId = petId ?: UUID.randomUUID().toString(), // Dùng petId cũ nếu edit mode
+                userId = currentUserId,
+                name = name,
+                species = species,
+                breed = breed,
+                color = color,
+                imageUrl = finalImageUrl,
+                birthDate = birthDate,
+                weightKg = weightKg.toFloat(),
+                sizeCm = sizeCm?.toFloat(),
+                healthStatus = "",
+                adoptionDate = adoptionDate
+            )
+
+            // 3. Lưu Room
+            if (editMode && petId != null) {
+                repository.updatePet(pet)
+                // Cập nhật state
+                _pets.value = _pets.value.map {
+                    if (it.petId == pet.petId) pet else it
+                }
+            } else {
+                repository.insertPet(pet)
+                // Thêm vào state
+                _pets.value = _pets.value + pet
+            }
+
+            // 4. Lưu Firestore
+            val petMap = hashMapOf(
+                "petId" to pet.petId,
+                "userId" to pet.userId,
+                "name" to pet.name,
+                "species" to pet.species,
+                "breed" to pet.breed,
+                "color" to pet.color,
+                "imageUrl" to pet.imageUrl,
+                "birthDate" to pet.birthDate,
+                "weightKg" to pet.weightKg,
+                "sizeCm" to pet.sizeCm,
+                "healthStatus" to pet.healthStatus,
+                "adoptionDate" to pet.adoptionDate
+            )
+
+            try {
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUserId)
+                    .collection("pets")
+                    .document(pet.petId)
+                    .set(petMap)
+                    .await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            _isLoading.value = false
+            onDone()
+        }
+    }
+
+
+
+    // Upload 1 pet lên Firebase
+    private fun uploadPetToFirebase(pet: PetEntity) {
+        val userId = auth.currentUser?.uid ?: return
+
+        val petMap = hashMapOf(
+            "petId" to pet.petId,
+            "userId" to pet.userId,
+            "name" to pet.name,
+            "species" to pet.species,
+            "breed" to pet.breed,
+            "color" to pet.color,
+            "imageUrl" to pet.imageUrl,
+            "birthDate" to pet.birthDate,
+            "weightKg" to pet.weightKg,
+            "sizeCm" to pet.sizeCm,
+            "healthStatus" to pet.healthStatus,
+            "adoptionDate" to pet.adoptionDate
+        )
+
+        db.collection("users")
+            .document(userId)
+            .collection("pets")
+            .document(pet.petId)
+            .set(petMap)
+    }
+
+//    fun getPetById(petId: String): Flow<Pet?> {
+//        return repository.getPetById(petId)
+//            .flowOn(Dispatchers.IO) // chạy trên background thread
 //    }
-//
-//    // Thêm triệu chứng mới cho pet hiện tại
-//    fun addSymptomForSelectedPet(name: String, desc: String) {
-//        val petId = selectedPet.value?.petId ?: return
-//        val current = symptomMap.value[petId] ?: emptyList()
-//        val nextId = "s${current.size + 1}"  // tạo id cố định tăng dần
-//        val newSymptom = SymptomLogEntity(nextId, petId, name, desc, System.currentTimeMillis())
-//        symptomMap.value = symptomMap.value.toMutableMap().apply { put(petId, current + newSymptom) }
-//    }
-//
-//}
-//class PetViewModelFactory(
-//    private val repository: PetRepository
-//) : ViewModelProvider.Factory {
-//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//        if (modelClass.isAssignableFrom(PetViewModel::class.java)) {
-//            @Suppress("UNCHECKED_CAST")
-//            return PetViewModel(repository) as T
-//        }
-//        throw IllegalArgumentException("Unknown ViewModel class")
-//    }
-//}
-//
-//
-//
-//
-//
-//
+
+    // Sync toàn bộ pets Room → Firebase
+    fun syncAllPets() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val allPets = repository.getAllPets()
+            val userId = auth.currentUser?.uid ?: return@launch
+
+            allPets.forEach { pet ->
+                val petMap = hashMapOf(
+                    "petId" to pet.petId,
+                    "userId" to pet.userId,
+                    "name" to pet.name,
+                    "species" to pet.species,
+                    "breed" to pet.breed,
+                    "color" to pet.color,
+                    "imageUrl" to pet.imageUrl,
+                    "birthDate" to pet.birthDate,
+                    "weightKg" to pet.weightKg,
+                    "sizeCm" to pet.sizeCm,
+                    "healthStatus" to pet.healthStatus,
+                    "adoptionDate" to pet.adoptionDate
+                )
+                db.collection("users")
+                    .document(userId)
+                    .collection("pets")
+                    .document(pet.petId)
+                    .set(petMap)
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    // Fetch pets từ Firebase về Room (optional)
+    fun fetchPetsFromFirebaseToRoom() {
+        val userId = auth.currentUser?.uid ?: return
+        db.collection("users")
+            .document(userId)
+            .collection("pets")
+            .get()
+            .addOnSuccessListener { result ->
+                viewModelScope.launch {
+                    val petsFromFirebase = result.map { doc ->
+                        PetEntity(
+                            petId = doc.getString("petId") ?: "",
+                            userId = doc.getString("userId") ?: "",
+                            name = doc.getString("name") ?: "",
+                            species = doc.getString("species") ?: "",
+                            breed = doc.getString("breed") ?: "",
+                            color = doc.getString("color"),
+                            imageUrl = doc.getString("imageUrl"),
+                            birthDate = doc.getLong("birthDate") ?: 0L,
+                            weightKg = doc.getDouble("weightKg")?.toFloat() ?: 0f,
+                            sizeCm = doc.getDouble("sizeCm")?.toFloat(),
+                            healthStatus = doc.getString("healthStatus") ?: "",
+                            adoptionDate = doc.getLong("adoptionDate")
+                        )
+                    }
+                    petsFromFirebase.forEach { repository.insertPet(it) }
+                    _pets.value = repository.getAllPets()
+                }
+            }
+    }
+    fun uploadImageToStorage(context: Context, imageUri: Uri, onComplete: (String?) -> Unit) {
+        val storageRef = FirebaseStorage.getInstance().reference
+        val fileName = "pet_images/${System.currentTimeMillis()}.jpg"
+        val imageRef = storageRef.child(fileName)
+
+        try {
+            val inputStream = context.contentResolver.openInputStream(imageUri)
+            if (inputStream == null) {
+                onComplete(null)
+                return
+            }
+
+            val bytes = inputStream.readBytes()
+            inputStream.close()
+
+            imageRef.putBytes(bytes)
+                .addOnSuccessListener {
+                    imageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                        onComplete(downloadUrl.toString())
+                    }.addOnFailureListener { onComplete(null) }
+                }
+                .addOnFailureListener {
+                    onComplete(null)
+                }
+        } catch (e: Exception) {
+            onComplete(null)
+        }
+    }
+
+}
+
+// Factory
+class PetViewModelFactory(private val repository: PetRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PetViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PetViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,13 +23,15 @@ import com.example.pet_health.ui.screens.*
 //import com.example.pet_health.ui.viewmodel.PetViewModel
 //import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import androidx.navigation.compose.navigation
+import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.example.pet_health.ui.viewmodel.PetViewModel
+import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import kotlinx.coroutines.launch
+import pet_health.data.local.AppDatabase
 
 
 @Composable
@@ -38,6 +41,8 @@ fun AppScreen() {
     val context = LocalContext.current
     val userRepository = remember { UserRepository(context) }
     val scope = rememberCoroutineScope()
+    val database = AppDatabase.getDatabase(context)
+    val repository = PetRepository(database)
     NavHost(
         navController = navController,
         startDestination = "auth"
@@ -126,8 +131,79 @@ fun AppScreen() {
                     onBack = { navController.popBackStack() }
                 )
             }
-            composable("pet_list") { PetListScreen(navController) }
-            composable("add_pet") { AddPetScreen(navController) }
+            composable("pet_list") { backStackEntry ->
+                val petViewModel: PetViewModel = viewModel(
+                    backStackEntry,
+                    factory = PetViewModelFactory(repository)
+                )
+                PetListScreen(navController, petViewModel)
+            }
+            composable(
+                route = "add_pet?editMode={editMode}&initName={initName}&initType={initType}&initAge={initAge}&initColor={initColor}&initWeight={initWeight}&initHeight={initHeight}&initAdoptionDate={initAdoptionDate}",
+                arguments = listOf(
+                    navArgument("editMode") { type = NavType.BoolType; defaultValue = false },
+                    navArgument("initName") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("initType") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("initAge") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("initColor") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("initWeight") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("initHeight") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("initAdoptionDate") { type = NavType.StringType; defaultValue = "" },
+                )
+            ) { backStackEntry ->
+
+                // Lấy ViewModel share với pet_list
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry("pet_list") }
+                val petViewModel: PetViewModel = viewModel(
+                    parentEntry,
+                    factory = PetViewModelFactory(repository)
+                )
+
+                // Lấy các argument từ route
+                val editMode = backStackEntry.arguments?.getBoolean("editMode") ?: false
+                val initName = backStackEntry.arguments?.getString("initName") ?: ""
+                val initType = backStackEntry.arguments?.getString("initType") ?: ""
+                val initAge = backStackEntry.arguments?.getString("initAge") ?: ""
+                val initColor = backStackEntry.arguments?.getString("initColor") ?: ""
+                val initWeight = backStackEntry.arguments?.getString("initWeight") ?: ""
+                val initHeight = backStackEntry.arguments?.getString("initHeight") ?: ""
+                val initAdoptionDate = backStackEntry.arguments?.getString("initAdoptionDate") ?: ""
+
+                // Lấy URI ảnh từ ViewModel tạm
+                val initImageUri = petViewModel.tempImageUri?.toString()
+
+                AddPetScreen(
+                    navController = navController,
+                    petViewModel = petViewModel,
+                    editMode = editMode,
+                    initName = initName,
+                    initType = initType,
+                    initAge = initAge,
+                    initColor = initColor,
+                    initWeight = initWeight,
+                    initHeight = initHeight,
+                    initAdoptionDate = initAdoptionDate,
+                    initImageUri = initImageUri
+                )
+            }
+            composable(
+                route = "pet_profile?petId={petId}",
+                arguments = listOf(navArgument("petId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry("pet_list") }
+                val petViewModel: PetViewModel = viewModel(
+                    parentEntry,
+                    factory = PetViewModelFactory(repository)
+                )
+
+                val petId = backStackEntry.arguments?.getString("petId")
+                val pet = petViewModel.pets.value.find { it.petId == petId }
+
+                if (pet != null) {
+                    PetProfileScreen(pet = pet, navController = navController,repository = repository
+                    )
+                }
+            }
             composable("health_records") { HealthRecordScreen(navController) }
             composable("add_health_record") { AddHealthRecordScreen(navController) }
             composable("reminder") { ReminderScreen(navController) }
@@ -154,56 +230,9 @@ fun AppScreen() {
             }
             composable("medical_records") { TiemThuocListScreen(navController) }
             composable("add_record") { AddRecordScreen(navController) }
-            composable(
-                route = "pet_profile?name={name}&breed={breed}&age={age}&imageRes={imageRes}",
-                arguments = listOf(
-                    navArgument("name") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("breed") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("age") { type = NavType.IntType; defaultValue = 0 },
-                    navArgument("imageRes") { type = NavType.IntType; defaultValue = 0 }
-                )
-            ) { backStackEntry ->
-
-                PetProfileScreen(
-                    name = backStackEntry.arguments?.getString("name") ?: "",
-                    breed = backStackEntry.arguments?.getString("breed") ?: "",
-                    age = backStackEntry.arguments?.getInt("age") ?: 0,
-                    imageRes = backStackEntry.arguments?.getInt("imageRes") ?: 0,
-                    navController = navController
-                )
-            }
-            composable(
-                route = "add_pet_new?editMode={editMode}&initName={initName}&initType={initType}&initAge={initAge}&initColor={initColor}&initWeight={initWeight}&initHeight={initHeight}&initAdoptionDate={initAdoptionDate}&initImageUri={initImageUri}",
-                arguments = listOf(
-                    navArgument("editMode") { type = NavType.BoolType; defaultValue = false },
-                    navArgument("initName") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("initType") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("initAge") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("initColor") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("initWeight") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("initHeight") { type = NavType.StringType; defaultValue = "" },
-                    navArgument("initAdoptionDate") {
-                        type = NavType.StringType; defaultValue = ""
-                    },
-                    navArgument("initImageUri") { type = NavType.StringType; defaultValue = "" }
-                )
-            ) { backStackEntry ->
-                AddPetScreen(
-                    navController = navController,
-                    editMode = backStackEntry.arguments?.getBoolean("editMode") ?: false,
-                    initName = backStackEntry.arguments?.getString("initName") ?: "",
-                    initType = backStackEntry.arguments?.getString("initType") ?: "",
-                    initAge = backStackEntry.arguments?.getString("initAge") ?: "",
-                    initColor = backStackEntry.arguments?.getString("initColor") ?: "",
-                    initWeight = backStackEntry.arguments?.getString("initWeight") ?: "",
-                    initHeight = backStackEntry.arguments?.getString("initHeight") ?: "",
-                    initAdoptionDate = backStackEntry.arguments?.getString("initAdoptionDate")
-                        ?: "",
-                    initImageUri = backStackEntry.arguments?.getString("initImageUri")
-                )
             }
         }
     }
-}
+
 
 

@@ -48,7 +48,7 @@ android {
 }
 
 dependencies {
-
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -58,6 +58,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.ui.text)
+    implementation(libs.ui)
+    implementation(libs.firebase.storage)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -94,12 +97,10 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.compose.ui:ui:1.5.0")
-    // Firebase Auth
+    // Firebase BoM
     implementation("com.google.firebase:firebase-auth-ktx:22.1.1")
     // Firestore
     implementation("com.google.firebase:firebase-firestore-ktx:24.7.1")
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation("com.google.firebase:firebase-analytics")
-
-
+    implementation("com.google.firebase:firebase-storage")
 }

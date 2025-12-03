@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.pet_health.R
 import androidx.navigation.NavController
 import com.example.pet_health.data.repository.UserRepository
+import com.example.pet_health.ui.screen.lightPink
 
 
 @OptIn(ExperimentalMaterial3Api::class)

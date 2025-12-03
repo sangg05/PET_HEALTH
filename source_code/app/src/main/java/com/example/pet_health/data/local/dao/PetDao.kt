@@ -3,6 +3,8 @@ package com.example.pet_health.data.local.dao
 import androidx.room.*
 import com.example.pet_health.data.entity.PetEntity
 
+
+
 @Dao
 interface PetDao {
 
@@ -20,5 +22,10 @@ interface PetDao {
 
     @Delete
     suspend fun deletePet(petEntity: PetEntity)
+    @Query("SELECT * FROM pets")
+    suspend fun getAllPets(): List<PetEntity>
 
+
+    @Query("SELECT * FROM pets WHERE petId = :petId LIMIT 1")
+    suspend fun getPetById(petId: String): PetEntity?
 }

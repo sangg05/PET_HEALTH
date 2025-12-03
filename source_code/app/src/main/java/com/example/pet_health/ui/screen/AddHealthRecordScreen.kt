@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.ui.graphics.vector.ImageVector
 
+val lightPink = Color(0xFFFFD2FC)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,5 +1,6 @@
     package com.example.pet_health.ui.screens
 
+    import android.icu.util.TimeUnit
     import android.net.Uri
     import androidx.compose.foundation.Image
     import androidx.compose.foundation.background
@@ -29,19 +30,23 @@
     import androidx.compose.material.icons.filled.Home
     import androidx.compose.material.icons.filled.Notifications
     import androidx.compose.material.icons.filled.Person
+    import androidx.lifecycle.viewmodel.compose.viewModel
+    import coil.compose.rememberAsyncImagePainter
+    import com.example.pet_health.data.entity.PetEntity
+    import com.example.pet_health.data.repository.PetRepository
+    import com.example.pet_health.ui.viewmodel.PetViewModel
+    import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun PetProfileScreen(
-        name: String,
-        breed: String,
-        color: String? = null,
-        age: Int,
-        imageRes: Int,
-        navController: NavController
-    ) {
+    fun PetProfileScreen(pet: PetEntity, navController: NavController,repository: PetRepository)
+    {
         val lightPink = Color(0xFFFFD2FC)
+        val petViewModel: PetViewModel = viewModel(
+            factory = PetViewModelFactory(repository)
+        )
+
 
         Scaffold(
             topBar = {
@@ -93,8 +98,8 @@
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = imageRes),
-                        contentDescription = name,
+                        painter = rememberAsyncImagePainter(pet.imageUrl ?: ""),
+                        contentDescription = pet.name,
                         modifier = Modifier
                             .size(150.dp)
                             .clip(CircleShape),
@@ -119,11 +124,11 @@
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text(name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                            Text(pet.name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Loài: $breed", fontSize = 20.sp, color = Color.Gray)
-                            color?.let {
-                                Text("Màu sắc: $it", fontSize = 20.sp, color = Color(0xFFD87ED6)) // màu hồng nhạt
+                            Text("Loài: ${pet.species}", fontSize = 20.sp, color = Color.Gray)
+                            if (!pet.color.isNullOrEmpty()) {
+                                Text("Màu sắc: ${pet.color}", fontSize = 20.sp, color = Color(0xFFD87ED6))
                             }
                         }
 
@@ -131,28 +136,47 @@
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(onClick = {
-                                val encodedName = Uri.encode(name)
-                                val encodedBreed = Uri.encode(breed)
-                                val encodedColor = Uri.encode(color ?: "")
+                        ) {IconButton(onClick = {
+                            // Tính age từ birthDate
+                            val ageYears = if (pet.birthDate > 0) {
+                                ((System.currentTimeMillis() - pet.birthDate) / (1000L * 60 * 60 * 24 * 365)).toInt()
+                            } else 0
 
-                                navController.navigate(
-                                    "add_pet_new?" +
-                                            "editMode=true" +
-                                            "&initName=$encodedName" +
-                                            "&initType=$encodedBreed" +
-                                            "&initAge=$age" +
-                                            "&initColor=$encodedColor" +
-                                            "&initWeight=9.5" +
-                                            "&initHeight=85" +
-                                            "&initAdoptionDate=24/12/2023" +
-                                            "&initImageUri=${imageRes}"
-                                )
+                            // Format adoption date
+                            val adoptionDateStr = pet.adoptionDate?.let { millis ->
+                                if (millis > 0) {
+                                    val cal = java.util.Calendar.getInstance()
+                                    cal.timeInMillis = millis
+                                    "%02d/%02d/%04d".format(
+                                        cal.get(java.util.Calendar.DAY_OF_MONTH),
+                                        cal.get(java.util.Calendar.MONTH) + 1,
+                                        cal.get(java.util.Calendar.YEAR)
+                                    )
+                                } else ""
+                            } ?: ""
+
+                            // Navigate với tất cả parameters
+                            navController.navigate(
+                                "add_pet?" +
+                                        "editMode=true&" +
+                                        "petId=${pet.petId}&" +
+                                        "initName=${Uri.encode(pet.name)}&" +
+                                        "initType=${Uri.encode(pet.species)}&" +
+                                        "initAge=$ageYears&" +
+                                        "initColor=${Uri.encode(pet.color ?: "")}&" +
+                                        "initWeight=${pet.weightKg}&" +
+                                        "initHeight=${pet.sizeCm ?: 0f}&" +
+                                        "initAdoptionDate=${Uri.encode(adoptionDateStr)}&" +
+                                        "initImageUri=${Uri.encode(pet.imageUrl ?: "")}"
+                            )
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.Black)
+                        }
+
+                            IconButton(onClick = {
+                                // petViewModel.deletePet(pet)
+                                navController.popBackStack()
                             }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.Black)
-                            }
-                            IconButton(onClick = { /* Delete action */ }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
                             }
                         }
@@ -175,13 +199,13 @@
                             color = Color.Black
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        InfoRow(label = "Tuổi:", value = "$age")
+                        InfoRow(label = "Tuổi:", value = calculateAge(pet.birthDate))
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoRow(label = "Cân nặng:", value = "9,5 kg")
+                        InfoRow(label = "Cân nặng:", value = "${pet.weightKg} kg")
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoRow(label = "Kích thước:", value = "85 cm")
+                        InfoRow(label = "Kích thước:", value = "${pet.sizeCm} cm")
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoRow(label = "Ngày nhận nuôi:", value = "24/12/2023")
+                        InfoRow(label = "Ngày nhận nuôi:", value = pet.adoptionDate?.let { formatDate(it) } ?: "")
                     }
                 }
 
@@ -199,5 +223,20 @@
             Text(label, fontSize = 18.sp, color = Color.Gray)
             Text(value, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color.Black)
         }
+    }
+    fun calculateAge(birthMillis: Long): String {
+        if (birthMillis <= 0) return "chưa có"
+        val now = System.currentTimeMillis()
+        val diffMillis = now - birthMillis
+        val years = (diffMillis / (1000L * 60 * 60 * 24 * 365)).toInt()
+        return "$years tuổi"
+    }
+    fun formatDate(millis: Long): String {
+        val cal = java.util.Calendar.getInstance()
+        cal.timeInMillis = millis
+        val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
+        val month = cal.get(java.util.Calendar.MONTH) + 1
+        val year = cal.get(java.util.Calendar.YEAR)
+        return "%02d/%02d/%04d".format(day, month, year)
     }
 
