@@ -55,6 +55,7 @@ import androidx.navigation.navArgument
 import com.example.pet_health.ui.screen.AccountActionsScreen
 import com.example.pet_health.ui.screen.AccountManagementScreen
 import com.example.pet_health.ui.screen.ChangePasswordScreen
+import com.example.pet_health.ui.screen.ChooseAvatarScreen
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.LoginScreen
 import com.example.pet_health.ui.screen.RegisterScreen
@@ -164,7 +165,7 @@ fun AppScreen() {
                 onUpdateInfo = {
                     navController.navigate("update_info")
                 },
-                onUpdateAvatar = { /* TODO */ },
+                onUpdateAvatar = {navController.navigate("choose_avatar")},
                 onChangePassword = {
                     navController.navigate("change_password")
                 },
@@ -187,6 +188,14 @@ fun AppScreen() {
             UpdateInfoScreen(
                 onBack = { navController.popBackStack() },
                 onSave = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable("choose_avatar") {
+            ChooseAvatarScreen(
+                onBack = { navController.popBackStack() },
+                onSelect = { uri ->
                     navController.popBackStack()
                 }
             )
