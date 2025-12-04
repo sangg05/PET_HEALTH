@@ -27,6 +27,7 @@ import androidx.navigation.compose.navigation
 import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
+import com.example.pet_health.ui.screen.NotificationScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
 import com.example.pet_health.ui.viewmodel.PetViewModel
@@ -236,6 +237,7 @@ fun AppScreen() {
             }
             composable("medical_records") { TiemThuocListScreen(navController) }
             composable("add_record") { AddRecordScreen(navController) }
+            composable("note") { NotificationScreen(navController) }
         }
     }
 }

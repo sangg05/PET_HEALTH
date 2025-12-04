@@ -52,7 +52,7 @@ fun HomeScreen(navController: NavController,userRepository: UserRepository) {
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { /* xử lý Home */ }) {
+                IconButton(onClick = { navController.navigate("home")}) {
                     Icon(
                         Icons.Default.Home,
                         contentDescription = "Trang chủ",
@@ -61,7 +61,7 @@ fun HomeScreen(navController: NavController,userRepository: UserRepository) {
                     )
                 }
 
-                IconButton(onClick = { /* xử lý Notifications */ }) {
+                IconButton(onClick = {navController.navigate("note")}) {
                     Icon(
                         Icons.Default.Notifications,
                         contentDescription = "Thông báo",

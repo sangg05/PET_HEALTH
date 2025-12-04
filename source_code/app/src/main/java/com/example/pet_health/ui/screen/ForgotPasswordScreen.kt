@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,14 +40,26 @@ fun ForgotPasswordScreen(
         Spacer(Modifier.height(30.dp))
 
         // ------ LOGO HÌNH TRÒN (LẤY Y CHANG REGISTER SCREEN) ------
-        Image(
-            painter = painterResource(id = R.drawable.pet_logo),
-            contentDescription = null,
+        Box(
             modifier = Modifier
                 .size(160.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+                .clip(CircleShape)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.pet_logo),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = 1.3f // phóng to ảnh theo chiều ngang
+                        scaleY = 1.3f // phóng to ảnh theo chiều dọc
+                        translationX = -20f
+                        translationY = 20f
+                    }
+                    .clip(CircleShape)
+            )
+        }
 
         Spacer(Modifier.height(20.dp))
 
