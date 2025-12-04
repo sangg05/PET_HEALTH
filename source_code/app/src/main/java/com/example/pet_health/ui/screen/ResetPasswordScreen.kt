@@ -2,7 +2,6 @@ package com.example.pet_health.ui.screen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,26 +46,14 @@ fun ResetPasswordScreen(
         Spacer(Modifier.height(40.dp))
 
         // ------ LOGO HÌNH TRÒN ------
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.pet_logo),
+            contentDescription = null,
             modifier = Modifier
-                .size(160.dp)
-                .clip(CircleShape)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.pet_logo),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        scaleX = 1.3f // phóng to ảnh theo chiều ngang
-                        scaleY = 1.3f // phóng to ảnh theo chiều dọc
-                        translationX = -20f
-                        translationY = 20f
-                    }
-                    .clip(CircleShape)
-            )
-        }
+                .size(180.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
 
         Spacer(Modifier.height(24.dp))
 
