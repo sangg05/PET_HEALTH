@@ -1,77 +1,178 @@
 package com.example.pet_health.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import com.example.pet_health.ui.screen.PetImagePicker
+import com.example.pet_health.ui.viewmodel.PetViewModel
+import java.util.Calendar
+import com.google.firebase.auth.FirebaseAuth
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddPetScreen(navController: NavController) {
-    var name by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf("") }
-    var color by remember { mutableStateOf("") }
-    var weight by remember { mutableStateOf("") }
-    var height by remember { mutableStateOf("") }
-    var adoptionDate by remember { mutableStateOf("") }
+fun AddPetScreen(
+    navController: NavController,
+    petViewModel: PetViewModel,
+    editMode: Boolean = false,
+    petId: String? = null,
+    initName: String = "",
+    initType: String = "",
+    initAge: String = "",
+    initColor: String = "",
+    initWeight: String = "",
+    initHeight: String = "",
+    initAdoptionDate: String = "",
+    initImageUri: String? = null
+) {
+    // States cho các trường nhập liệu
+    var name by remember { mutableStateOf(initName) }
+    var type by remember { mutableStateOf(initType) }
+    var age by remember { mutableStateOf(initAge) }
+    var color by remember { mutableStateOf(initColor) }
+    var weight by remember { mutableStateOf(initWeight) }
+    var height by remember { mutableStateOf(initHeight) }
+    var adoptionDate by remember { mutableStateOf(initAdoptionDate) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFFFFD6EC), Color(0xFFEAD6FF))
-                )
+    // State cho ảnh - quan trọng!
+    var imageUri by remember {
+        mutableStateOf<Uri?>(
+            if (!initImageUri.isNullOrEmpty()) Uri.parse(initImageUri) else null
+        )
+    }
+
+    // Lưu URL ảnh ban đầu để biết ảnh cũ
+    val originalImageUrl = remember { initImageUri ?: "" }
+
+    val lightPink = Color(0xFFFFB3D9)
+    val context = LocalContext.current
+
+    // Gallery launcher - cập nhật cả imageUri
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            imageUri = it  // Cập nhật Uri để hiển thị ảnh
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        if(editMode) "Chỉnh sửa thú cưng" else "Thêm thú cưng",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
-    ) {
+        },
+        bottomBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth().height(60.dp).background(Color.White),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Home, "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Notifications, "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Person, "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+            }
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
+                .background(Brush.verticalGradient(listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))))
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(innerPadding)
+                .padding(20.dp)
                 .verticalScroll(rememberScrollState())
+                .imePadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // === Thanh tiêu đề ===
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            var showImagePickerDialog by remember { mutableStateOf(false) }
+
+            // Ảnh thú cưng
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(60.dp))
+                    .background(Color.LightGray)
+                    .clickable {
+                        showImagePickerDialog = true
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                if (imageUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUri),
+                        contentDescription = "Ảnh thú cưng",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Chọn ảnh", tint = Color.White)
                 }
-                Text(
-                    text = "Thêm thú cưng",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp),
-                    color = Color.Black
+            }
+
+            if (showImagePickerDialog) {
+                PetImagePicker(
+                    onImageSelected = { uriString ->
+                        imageUri = Uri.parse(uriString)
+                    },
+                    onDismiss = { showImagePickerDialog = false },
+                    onGalleryClick = { galleryLauncher.launch("image/*") }
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // === Các trường nhập liệu ===
+            // Các trường nhập liệu
             PetInputField(label = "Tên", value = name, onValueChange = { name = it })
-            PetInputField(label = "Loài", value = type, onValueChange = { type = it })
-            PetInputField(label = "Tuổi", value = age, onValueChange = { age = it })
-            PetInputField(label = "Màu sắc", value = color, onValueChange = { color = it })
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            PetInputField(label = "Loài", value = type, onValueChange = { type = it })
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PetInputField(label = "Tuổi", value = age, onValueChange = { age = it })
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PetInputField(label = "Màu sắc", value = color, onValueChange = { color = it })
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 PetInputField(
                     label = "Cân nặng (kg)",
                     value = weight,
@@ -86,29 +187,77 @@ fun AddPetScreen(navController: NavController) {
                 )
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             PetInputField(
                 label = "Ngày nhận nuôi",
                 value = adoptionDate,
                 onValueChange = { adoptionDate = it },
-                trailingIcon = Icons.Default.CalendarToday
+                trailingIcon = Icons.Default.CalendarToday,
+                isDateField = true
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // === Nút Cập nhật ===
+            // Nút Cập nhật/Thêm
             Button(
                 onClick = {
-                    // TODO: Lưu dữ liệu nếu có DB hoặc DataStore
-                    navController.popBackStack() // Quay lại danh sách thú cưng
+                    if (name.isNotEmpty() && type.isNotEmpty()) {
+                        // Tính birthDate từ age
+                        val birthDateMillis = if(age.isNotEmpty()) {
+                            val years = age.toIntOrNull() ?: 0
+                            Calendar.getInstance().apply {
+                                add(Calendar.YEAR, -years)
+                            }.timeInMillis
+                        } else 0L
+
+                        // Tính adoptionDate
+                        val adoptionTimestamp = if(adoptionDate.isNotEmpty()) {
+                            val parts = adoptionDate.split("/") // dd/MM/yyyy
+                            if(parts.size == 3) {
+                                Calendar.getInstance().apply {
+                                    set(parts[2].toInt(), parts[1].toInt() - 1, parts[0].toInt())
+                                }.timeInMillis
+                            } else null
+                        } else null
+
+                        petViewModel.addOrUpdatePet(
+                            context = context,
+                            name = name,
+                            species = type,
+                            birthDate = birthDateMillis,
+                            color = color,
+                            weightKg = weight.toDoubleOrNull() ?: 0.0,
+                            sizeCm = height.toDoubleOrNull(),
+                            adoptionDate = adoptionTimestamp,
+                            imageUri = imageUri,              // Uri hiện tại (có thể là mới hoặc cũ)
+                            existingImageUrl = originalImageUrl, // URL ảnh ban đầu
+                            editMode = editMode,
+                            petId = petId
+                        ) {
+                            navController.popBackStack()
+                        }
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Tên và loài không được để trống",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB2F0C0)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF81F39F)),
                 shape = RoundedCornerShape(50),
-                modifier = Modifier
-                    .fillMaxWidth(0.5f)
-                    .align(Alignment.CenterHorizontally)
+                modifier = Modifier.fillMaxWidth(0.5f).height(48.dp)
             ) {
-                Text("Cập nhật", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(
+                    if(editMode) "Cập nhật" else "Thêm",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
@@ -119,29 +268,61 @@ fun PetInputField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    trailingIcon: ImageVector? = Icons.Default.Edit
+    trailingIcon: ImageVector? = Icons.Default.Edit,
+    isDateField: Boolean = false
 ) {
+    val context = LocalContext.current
+
+    val calendar = remember { java.util.Calendar.getInstance() }
+    val datePickerDialog = remember(context) {
+        android.app.DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val formattedDate = "%02d/%02d/%04d".format(dayOfMonth, month + 1, year)
+                onValueChange(formattedDate)
+            },
+            calendar.get(java.util.Calendar.YEAR),
+            calendar.get(java.util.Calendar.MONTH),
+            calendar.get(java.util.Calendar.DAY_OF_MONTH)
+        )
+    }
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        trailingIcon = {
-            if (trailingIcon != null) {
-                Icon(
-                    imageVector = trailingIcon,
-                    contentDescription = "icon",
-                    tint = Color.Gray
-                )
+        readOnly = isDateField,
+        label = {
+            Text(
+                text = label,
+                color = Color(0xFF6E6E6E),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        },
+        modifier = modifier.fillMaxWidth(),
+        trailingIcon = trailingIcon?.let { icon ->
+            {
+                IconButton(onClick = {
+                    if (isDateField) {
+                        datePickerDialog.show()
+                    }
+                }) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = Color(0xFFCE3CCB)
+                    )
+                }
             }
         },
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
+            unfocusedContainerColor = Color.White,
+            focusedContainerColor = Color.White,
             focusedBorderColor = Color(0xFFCE3CCB),
             unfocusedBorderColor = Color.Gray,
-            focusedLabelColor = Color(0xFFCE3CCB)
+            focusedLabelColor = Color(0xFFCE3CCB),
+            unfocusedLabelColor = Color(0xFF6E6E6E)
         )
     )
 }
