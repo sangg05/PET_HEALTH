@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.entity.SymptomLogEntity
 import com.example.pet_health.data.entity.UserEntity
+import com.example.pet_health.repository.UserPreferences
 import com.example.pet_health.ui.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -169,6 +170,29 @@ class UserRepository(private val context: Context) {
             null
         }
     }
+
+    //Ghi nhớ đăng nhập
+
+
+    private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+
+    fun setRememberMe(email: String, password: String, remember: Boolean) {
+        prefs.edit().apply {
+            putBoolean("remember_me", remember)
+            if (remember) {
+                putString("saved_email", email)
+                putString("saved_password", password)
+            } else {
+                putString("saved_email", "")
+                putString("saved_password", "")
+            }
+            apply() // phải gọi apply() hoặc commit()
+        }
+    }
+
+    fun getRememberedEmail(): String? = prefs.getString("saved_email", "")
+    fun getRememberedPassword(): String? = prefs.getString("saved_password", "")
+    fun isRememberMe(): Boolean = prefs.getBoolean("remember_me", false)
 }
 
 

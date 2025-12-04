@@ -3,6 +3,7 @@ package com.example.pet_health.ui.viewmodel
 import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pet_health.data.entity.UserEntity
 import com.example.pet_health.data.repository.UserRepository
@@ -62,5 +63,36 @@ class UserViewModel(
                 phone = phone ?: ""
             )
         }
+    }
+}
+class LoginViewModel(private val repository: UserRepository) : ViewModel() {
+
+    // State để Compose quan sát
+    var rememberMe = mutableStateOf(repository.isRememberMe())
+        private set
+    var savedEmail = mutableStateOf(repository.getRememberedEmail() ?: "")
+        private set
+    var savedPassword = mutableStateOf(repository.getRememberedPassword() ?: "")
+        private set
+
+    fun onLogin(email: String, password: String, remember: Boolean) {
+        viewModelScope.launch {
+            if (remember) {
+                repository.setRememberMe(email, password, true)
+            } else {
+                repository.setRememberMe("", "", false) // xóa thông tin
+            }
+        }
+    }
+}
+class LoginViewModelFactory(
+    private val repository: UserRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return LoginViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

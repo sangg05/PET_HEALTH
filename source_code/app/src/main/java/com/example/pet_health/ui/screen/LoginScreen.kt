@@ -24,9 +24,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pet_health.R
 import com.example.pet_health.data.repository.UserRepository
+import com.example.pet_health.ui.viewmodel.LoginViewModel
+import com.example.pet_health.ui.viewmodel.LoginViewModelFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,13 +47,16 @@ fun LoginScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
 
 
+
+    val viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = LoginViewModelFactory(userRepository)
+    )
+    val email by viewModel.savedEmail
+    val password by viewModel.savedPassword
+    val rememberMe by viewModel.rememberMe
 
     Column(
         modifier = Modifier
@@ -99,7 +105,7 @@ fun LoginScreen(
         // ------ EMAIL ------
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {  viewModel.savedEmail.value = it},
             placeholder = { Text("Nhập email/số điện thoại") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -118,7 +124,7 @@ fun LoginScreen(
 // ------ PASSWORD ------
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { viewModel.savedPassword.value = it},
             placeholder = { Text("Nhập mật khẩu") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
@@ -146,13 +152,14 @@ fun LoginScreen(
         Spacer(Modifier.height(8.dp))
 
         // ------ GHI NHỚ ĐĂNG NHẬP ------
+        val rememberMe by viewModel.rememberMe
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
             Checkbox(
                 checked = rememberMe,
-                onCheckedChange = { rememberMe = it },
+                onCheckedChange = { viewModel.rememberMe.value = it },
                 colors = CheckboxDefaults.colors(
                     checkmarkColor = Color.White,
                     checkedColor = buttonColor
@@ -170,6 +177,7 @@ fun LoginScreen(
 
         Button(
             onClick = {
+                viewModel.onLogin(email, password, rememberMe)
                 onLoginClick(email, password)
             },
             modifier = Modifier
