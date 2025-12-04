@@ -1,88 +1,129 @@
 package com.example.pet_health.ui.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.pet_health.data.entity.Reminder
-import java.util.UUID
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 
-// Không cần truyền Repository lúc này vì ta đang làm logic trên RAM trước
 class ReminderViewModel : ViewModel() {
 
-    // Danh sách nhắc nhở
+    // Danh sách hiển thị lên UI
     private val _reminders = mutableStateOf<List<Reminder>>(emptyList())
     val reminders: State<List<Reminder>> = _reminders
 
+    // Firebase Instances
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
+    private var snapshotListener: ListenerRegistration? = null
+
     init {
-        initDummyReminders()
+        // Tự động tải dữ liệu khi khởi tạo
+        fetchRemindersRealtime()
     }
 
-    // Tạo dữ liệu mẫu
-    private fun initDummyReminders() {
-        _reminders.value = listOf(
-            Reminder(
-                id = UUID.randomUUID().toString(),
-                petName = "Mimi", title = "Mũi FVRCP #4", type = "Tiêm phòng",
-                date = "25/10/2026", time = "09:00", repeat = "6 tháng",
-                earlyNotify = "30 phút", note = "Mang sổ khám", status = "Sắp tới"
-            ),
-            Reminder(
-                id = UUID.randomUUID().toString(),
-                petName = "Lu", title = "Tẩy giun định kỳ", type = "Tẩy giun",
-                date = "25/04/2025", time = "08:00", repeat = "3 tháng",
-                earlyNotify = "Không", note = "Mua thuốc Drontal", status = "Sắp tới"
-            )
-        )
+    // 1. Lắng nghe dữ liệu Realtime
+    private fun fetchRemindersRealtime() {
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            Log.e("ReminderViewModel", "User chưa đăng nhập, không thể tải dữ liệu")
+            _reminders.value = emptyList()
+            return
+        }
+
+        // Đường dẫn: users -> [userID] -> reminders
+        val ref = db.collection("users").document(userId).collection("reminders")
+
+        snapshotListener = ref.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                Log.w("ReminderViewModel", "Lỗi lắng nghe Firestore", e)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null) {
+                val list = snapshot.toObjects(Reminder::class.java)
+                _reminders.value = list
+                Log.d("ReminderViewModel", "Đã tải ${list.size} nhắc nhở")
+            }
+        }
     }
 
-    // Thêm nhắc nhở
+    // 2. Thêm nhắc nhở mới
     fun addReminder(reminder: Reminder) {
-        val currentList = _reminders.value.toMutableList()
-        currentList.add(reminder)
-        _reminders.value = currentList
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            Log.e("ReminderViewModel", "Lỗi: User ID là null, không thể lưu")
+            return
+        }
+
+        Log.d("ReminderViewModel", "Đang lưu nhắc nhở: ${reminder.title} cho user: $userId")
+
+        db.collection("users").document(userId)
+            .collection("reminders")
+            .document(reminder.id)
+            .set(reminder)
+            .addOnSuccessListener {
+                Log.d("ReminderViewModel", "Lưu thành công lên Firebase!")
+            }
+            .addOnFailureListener { e ->
+                Log.e("ReminderViewModel", "Lưu thất bại", e)
+            }
     }
 
-    // Lấy chi tiết theo ID
+    // 3. Cập nhật (Sửa)
+    fun updateReminder(updatedReminder: Reminder) {
+        val userId = auth.currentUser?.uid ?: return
+
+        db.collection("users").document(userId)
+            .collection("reminders")
+            .document(updatedReminder.id)
+            .set(updatedReminder)
+            .addOnSuccessListener { Log.d("ReminderViewModel", "Cập nhật thành công") }
+            .addOnFailureListener { e -> Log.e("ReminderViewModel", "Cập nhật thất bại", e) }
+    }
+
+    // 4. Cập nhật trạng thái
+    fun updateReminderStatus(id: String, newStatus: String) {
+        val userId = auth.currentUser?.uid ?: return
+
+        val updates = mapOf(
+            "status" to newStatus,
+            "isDone" to (newStatus == "Hoàn thành")
+        )
+
+        db.collection("users").document(userId)
+            .collection("reminders")
+            .document(id)
+            .update(updates)
+    }
+
+    // 5. Xóa
+    fun deleteReminder(id: String) {
+        val userId = auth.currentUser?.uid ?: return
+
+        db.collection("users").document(userId)
+            .collection("reminders")
+            .document(id)
+            .delete()
+    }
+
+    // 6. Lấy chi tiết
     fun getReminderById(id: String): Reminder? {
         return _reminders.value.find { it.id == id }
     }
 
-    // Cập nhật trạng thái
-    fun updateReminderStatus(id: String, newStatus: String) {
-        val currentList = _reminders.value.toMutableList()
-        val index = currentList.indexOfFirst { it.id == id }
-
-        if (index != -1) {
-            val oldItem = currentList[index]
-            val newItem = oldItem.copy(
-                status = newStatus,
-                isDone = (newStatus == "Hoàn thành")
-            )
-            currentList[index] = newItem
-            _reminders.value = currentList
-        }
-    }
-
-    // Xóa nhắc nhở
-    fun deleteReminder(id: String) {
-        val currentList = _reminders.value.toMutableList()
-        currentList.removeAll { it.id == id }
-        _reminders.value = currentList
-    }
-    // Hàm cập nhật thông tin nhắc nhở (Edit)
-    fun updateReminder(updatedReminder: Reminder) {
-        val currentList = _reminders.value.toMutableList()
-        val index = currentList.indexOfFirst { it.id == updatedReminder.id }
-
-        if (index != -1) {
-            currentList[index] = updatedReminder
-            _reminders.value = currentList
-        }
+    override fun onCleared() {
+        super.onCleared()
+        snapshotListener?.remove()
     }
 }
 
-// Factory cho ReminderViewModel (Cần thiết để khởi tạo trong Compose)
+// Factory
 class ReminderViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ReminderViewModel::class.java)) {
