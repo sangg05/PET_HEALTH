@@ -160,8 +160,12 @@ fun AddHealthRecordScreen(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Thú cưng") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                        modifier = Modifier.fillMaxWidth()
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor() // ⭐ QUAN TRỌNG: Thêm modifier này
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -208,20 +212,37 @@ fun AddHealthRecordScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
+
                     Button(
-                        // Lưu dữ liệu và quay lại trang hồ sơ
                         onClick = {
+                            // Validate dữ liệu
+                            if (selectedPetId.isEmpty()) {
+                                Toast.makeText(context, "Vui lòng chọn thú cưng", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            if (date.isEmpty()) {
+                                Toast.makeText(context, "Vui lòng chọn ngày khám", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
                             val record = HealthRecordEntity(
                                 recordId = UUID.randomUUID().toString(),
-                                petId = selectedPetId, // ID thú cưng hiện tại
-                                date = parseDateToMillis(date), // chuyển từ "dd/MM/yyyy" -> timestamp
+                                petId = selectedPetId,
+                                date = parseDateToMillis(date),
                                 symptom = symptoms,
+                                diagnosis = symptoms,
                                 prescription = prescription,
                                 weight = weight.toFloatOrNull(),
                                 height = height.toFloatOrNull(),
                                 alert = false
                             )
-                            healthRecordViewModel.addRecord(record) // gọi ViewModel lưu vào Room/Firebase
+
+                            healthRecordViewModel.addRecord(record)
+
+                            // Hiển thị thông báo
+                            Toast.makeText(context, "Đã lưu bệnh án", Toast.LENGTH_SHORT).show()
+
+                            // Quay lại màn hình trước
                             navController.popBackStack()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB2F0C0)),

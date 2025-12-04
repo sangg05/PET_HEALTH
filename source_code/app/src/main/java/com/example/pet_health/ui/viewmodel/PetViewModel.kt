@@ -14,6 +14,7 @@ import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.repository.PetRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 import java.io.File
 import com.google.firebase.storage.FirebaseStorage
@@ -34,9 +35,37 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
+    private var listenerRegistration: ListenerRegistration? = null
+
     init {
-        fetchPets()
+        setupRealtimeListener()
         loadPets()
+    }
+    private fun setupRealtimeListener() {
+        val userId = auth.currentUser?.uid ?: return
+
+        _isLoading.value = true
+
+        listenerRegistration = db.collection("users")
+            .document(userId)
+            .collection("pets")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("PetViewModel", "Listen failed", error)
+                    _isLoading.value = false
+                    return@addSnapshotListener
+                }
+
+                val petsList = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(PetEntity::class.java)
+                } ?: emptyList()
+
+                // ⭐ Tự động cập nhật StateFlow
+                _pets.value = petsList
+                _isLoading.value = false
+
+                Log.d("PetViewModel", "Realtime update: ${petsList.size} pets")
+            }
     }
 
     private fun fetchPets() {
@@ -355,6 +384,11 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
                 onComplete()
             }
         }
+    }
+    override fun onCleared() {
+        super.onCleared()
+        listenerRegistration?.remove()
+        Log.d("PetViewModel", "Realtime listener removed")
     }
 
     fun loadPets() {

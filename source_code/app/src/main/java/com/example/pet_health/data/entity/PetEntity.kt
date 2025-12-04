@@ -18,16 +18,17 @@ import androidx.room.Index
     indices = [Index("userId")] // tạo index cho search theo userId
 )
 data class PetEntity(
-    @PrimaryKey val petId: String,
-    val userId: String,
-    val name: String,
-    val species: String,     // Loài: chó, mèo, thỏ…
-    val breed: String,       // Giống
-    val color: String? = null,      // Màu lông
-    var imageUrl: String? = null,  // URL ảnh avatar
-    val birthDate: Long,             // timestamp sinh nhật
-    var weightKg: Float,             // cân nặng
-    var sizeCm: Float? = null,       // chiều cao/cỡ
-    var healthStatus: String,        // tình trạng sức khỏe
-    val adoptionDate: Long? = null   // timestamp ngày nhận nuôi
+    @PrimaryKey
+    val petId: String = "",
+    val userId: String = "",
+    val name: String = "",
+    val species: String = "",
+    val breed: String = "",
+    val color: String? = null,
+    val imageUrl: String? = null,
+    val birthDate: Long = 0L,
+    val weightKg: Float = 0f,
+    val sizeCm: Float? = null,
+    val healthStatus: String = "",
+    val adoptionDate: Long? = null
 )
