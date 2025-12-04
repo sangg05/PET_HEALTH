@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,21 +14,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pet_health.R
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun ForgotPasswordScreen(
-    onSendClick: (String) -> Unit,
     onNavigateLogin: () -> Unit
 ) {
-    val background = Color(0xFFF3CCE4)
-    val buttonColor = Color(0xFFDB91D6)
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
 
     var email by remember { mutableStateOf("") }
+
+    val background = Color(0xFFF3CCE4)
+    val buttonColor = Color(0xFFDB91D6)
 
     Column(
         modifier = Modifier
@@ -39,7 +45,7 @@ fun ForgotPasswordScreen(
 
         Spacer(Modifier.height(30.dp))
 
-        // ------ LOGO HÌNH TRÒN (LẤY Y CHANG REGISTER SCREEN) ------
+        // Logo
         Box(
             modifier = Modifier
                 .size(160.dp)
@@ -63,60 +69,61 @@ fun ForgotPasswordScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // ------ TIÊU ĐỀ ------
         Text(
             "QUÊN MẬT KHẨU",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
+            fontSize = 26.sp
         )
 
         Spacer(Modifier.height(20.dp))
 
-        // ------------ EMAIL FIELD (GIỐNG REGISTER + CÓ ICON) ------------
+        // Email input
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             placeholder = { Text("Nhập email khôi phục") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_email),
-                    contentDescription = "email",
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+            shape = RoundedCornerShape(14.dp)
         )
 
         Spacer(Modifier.height(22.dp))
 
-        // ------------ BUTTON GỬI MÃ ------------
+        // Button gửi link reset
         Button(
-            onClick = { onSendClick(email) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            colors = ButtonDefaults.buttonColors(buttonColor),
-            shape = RoundedCornerShape(14.dp)
+            onClick = {
+                if (email.isBlank()) {
+                    Toast.makeText(context, "Vui lòng nhập email!", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                auth.sendPasswordResetEmail(email)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Toast.makeText(
+                                context,
+                                "Đã gửi email khôi phục! Vui lòng kiểm tra hộp thư.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            onNavigateLogin() // quay lại login
+                        } else {
+                            Toast.makeText(
+                                context,
+                                task.exception?.message ?: "Có lỗi xảy ra",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                "Gửi mã khôi phục",
-                color = Color.White,
-                fontSize = 18.sp
-            )
+            Text("Gửi link khôi phục")
         }
 
         Spacer(Modifier.height(18.dp))
 
-        // ------------ QUAY LẠI ĐĂNG NHẬP ------------
         TextButton(onClick = onNavigateLogin) {
-            Text(
-                "Quay lại đăng nhập",
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Quay lại đăng nhập", color = Color.Black)
         }
     }
 }
+

@@ -126,15 +126,7 @@ fun AppScreen() {
                     }
                 )
             }
-            composable("forgot") {
-                ForgotPasswordScreen(
-                    onSendClick = { email ->
-                        // TODO: gửi OTP
-                        navController.navigate("reset_password/$email")
-                    },
-                    onNavigateLogin = { navController.popBackStack() }
-                )
-            }
+
             composable(
                 route = "reset_password/{email}",
                 arguments = listOf(
@@ -324,6 +316,11 @@ fun AppScreen() {
                     onPasswordChanged = {
                         // hành động sau khi đổi mật khẩu
                     }
+                )
+            }
+            composable("forgot_password") {
+                ForgotPasswordScreen(
+                    onNavigateLogin = { navController.popBackStack() }
                 )
             }
             composable("medical_records") { TiemThuocListScreen(navController) }
