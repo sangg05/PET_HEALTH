@@ -22,6 +22,9 @@ class ReminderViewModel : ViewModel() {
 
     private var snapshotListener: ListenerRegistration? = null
 
+    // <--- THÊM BIẾN NÀY: Lưu ID vừa tạo để UI biết đường chuyển trang
+    var createdReminderId = mutableStateOf<String?>(null)
+
     init {
         // Tự động tải dữ liệu khi khởi tạo
         fetchRemindersRealtime()
@@ -61,6 +64,9 @@ class ReminderViewModel : ViewModel() {
             return
         }
 
+        // Reset ID trước khi thực hiện lưu
+        createdReminderId.value = null
+
         Log.d("ReminderViewModel", "Đang lưu nhắc nhở: ${reminder.title} cho user: $userId")
 
         db.collection("users").document(userId)
@@ -69,6 +75,8 @@ class ReminderViewModel : ViewModel() {
             .set(reminder)
             .addOnSuccessListener {
                 Log.d("ReminderViewModel", "Lưu thành công lên Firebase!")
+                // <--- CẬP NHẬT ID MỚI ĐỂ UI CHUYỂN TRANG
+                createdReminderId.value = reminder.id
             }
             .addOnFailureListener { e ->
                 Log.e("ReminderViewModel", "Lưu thất bại", e)

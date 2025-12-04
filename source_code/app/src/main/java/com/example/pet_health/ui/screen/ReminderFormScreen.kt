@@ -118,7 +118,23 @@ fun ReminderFormScreen(
         }
     }
 
-    // ... (Date/Time Picker Logic giữ nguyên) ...
+    // <--- THEO DÕI ID MỚI TẠO ĐỂ CHUYỂN TRANG --->
+    val newId by viewModel.createdReminderId
+
+    LaunchedEffect(newId) {
+        if (newId != null) {
+            // Chuyển sang màn hình chi tiết
+            navController?.navigate("reminder_detail/$newId") {
+                // === SỬA LỖI Ở ĐÂY: Dùng đúng chuỗi route đã khai báo trong AppScreen ===
+                // Điều này đảm bảo màn hình Form bị xóa khỏi stack
+                popUpTo("reminder_form?reminderId={reminderId}") { inclusive = true }
+            }
+            // Reset lại để tránh lỗi lần sau
+            viewModel.createdReminderId.value = null
+        }
+    }
+
+    // Date Picker Logic
     val datePickerDialog = DatePickerDialog(
         context,
         { _, y, m, d ->
@@ -139,6 +155,7 @@ fun ReminderFormScreen(
     )
     datePickerDialog.datePicker.minDate = System.currentTimeMillis() - 1000
 
+    // Time Picker Logic
     val timePickerDialog = TimePickerDialog(
         context,
         { _, h, min ->
@@ -491,8 +508,7 @@ fun ReminderFormScreen(
                             } else {
                                 viewModel.addReminder(reminderToSave)
                             }
-
-                            navController?.popBackStack()
+                            // Không gọi popBackStack ở đây nữa, LaunchedEffect ở trên sẽ lo việc chuyển trang
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                     ) {
