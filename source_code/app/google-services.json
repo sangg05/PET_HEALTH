@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "101864975420",
+    "project_id": "pethealth-bedca",
+    "storage_bucket": "pethealth-bedca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:101864975420:android:e69b73b264049ee6732739",
+        "android_client_info": {
+          "package_name": "com.example.pet_health"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDb6IX1jpjZt1FyY8_fgrBgqQ9U839mEzA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

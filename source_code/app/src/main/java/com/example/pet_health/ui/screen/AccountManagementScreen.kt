@@ -2,7 +2,6 @@ package com.example.pet_health.ui.screen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,12 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -44,31 +46,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pet_health.R
+import androidx.navigation.NavController
+import com.example.pet_health.data.repository.UserRepository
+import com.example.pet_health.ui.screen.lightPink
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountManagementScreen(
+    navController: NavController,
     onBack: () -> Unit = {},
-    onNavigateMore: () -> Unit = {}
+    onNavigateMore: () -> Unit = {},
+    userRepository: UserRepository,
 ) {
     val background = Color(0xFFF3CCE4)
     val cardColor = Color.White
+
     var note by remember { mutableStateOf("") }
-    var isEditing by remember { mutableStateOf(false) }
+    val user = userRepository.currentUser.value
+
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Quản lý tài khoản", fontWeight = FontWeight.Bold) },
+                title = { Text("Quản lý tài khoản", fontWeight = FontWeight.Bold, color = Color.Black) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        onNavigateMore()
-                    }) {
+                    IconButton(onClick = onNavigateMore) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_more),
                             contentDescription = "More",
@@ -76,18 +84,58 @@ fun AccountManagementScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFE5A8C8)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
         },
-        containerColor = background
-    ) { padding ->
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(Color.White),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { /* xử lý Home */ }) {
+                    Icon(
+                        Icons.Default.Home,
+                        contentDescription = "Trang chủ",
+                        tint = Color(0xFF6200EE),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                IconButton(onClick = { /* xử lý Notifications */ }) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Thông báo",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                IconButton(onClick = {navController.navigate("account")
+                }) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Hồ sơ",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+        }
+    ){ padding ->
 
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
+                    )
+                )
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -127,16 +175,13 @@ fun AccountManagementScreen(
                     )
 
                     Spacer(Modifier.height(12.dp))
-
-                    Text("Tên: Lê Thị B")
+                    Text("Tên: ${user?.name ?: "Chưa có"}")
+                    Text("Tài khoản: ${user?.email ?: "Chưa có"}")
+                    Text("Điện thoại: ${user?.phone ?: "Chưa có"}")
                     Spacer(Modifier.height(4.dp))
-                    Text("Tài khoản: abc@gmail.com")
+                    Text("Giới tính: ${user?.gender ?: "Chưa cập nhật"}")
                     Spacer(Modifier.height(4.dp))
-                    Text("Điện thoại: 0999999999")
-                    Spacer(Modifier.height(4.dp))
-                    Text("Giới tính: Nữ")
-                    Spacer(Modifier.height(4.dp))
-                    Text("Ngày sinh: 01/01/2000")
+                    Text("Ngày sinh: ${user?.birthDate ?: "Chưa cập nhật"}")
                 }
             }
 
@@ -145,87 +190,39 @@ fun AccountManagementScreen(
             // ---------------- GHI CHÚ ----------------
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .height(160.dp),
                 colors = CardDefaults.cardColors(containerColor = cardColor),
                 shape = RoundedCornerShape(20.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+                    Text("Ghi chú", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Hàng tiêu đề + edit icon
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Ghi chú", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        IconButton(onClick = { isEditing = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_edit),
-                                contentDescription = "Edit",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Khung ghi chú
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White, RoundedCornerShape(12.dp))
+                            .fillMaxSize()
+                            .background(Color(0xFFF8F8F8), RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
-                        if (isEditing) {
-                            BasicTextField(
-                                value = note,
-                                onValueChange = { note = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                textStyle = TextStyle(color = Color.Black, fontSize = 16.sp)
-                            )
-                        } else {
-                            Text(
-                                text = if (note.isNotBlank()) note else "Chưa có ghi chú",
-                                color = if (note.isNotBlank()) Color.Black else Color.Gray,
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Nút Lưu
-                    if (isEditing) {
-                        Card(
+                        BasicTextField(
+                            value = note,
+                            onValueChange = { note = it },
                             modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .clickable {
-                                    isEditing = false
-                                },
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE5A8C8)),
-                            shape = RoundedCornerShape(24.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(horizontal = 24.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_save),
-                                    contentDescription = "Save",
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                .fillMaxSize(),
+                            textStyle = TextStyle(color = Color.Black)
+                        ) { innerTextField ->
+                            // decorationBox body
+                            if (note.isEmpty()) {
                                 Text(
-                                    "Lưu",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
+                                    text = "Nhập các ghi chú cá nhân",
+                                    color = Color.Gray
                                 )
                             }
+                            innerTextField()
                         }
                     }
                 }

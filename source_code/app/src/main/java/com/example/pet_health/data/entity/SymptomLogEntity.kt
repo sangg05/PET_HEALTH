@@ -4,8 +4,9 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.Index
+
 @Entity(
-    tableName = "pet_images",
+    tableName = "symptom_logs",
     foreignKeys = [
         ForeignKey(
             entity = PetEntity::class,
@@ -16,10 +17,10 @@ import androidx.room.Index
     ],
     indices = [Index("petId")]
 )
-data class PetImageEntity(
-    @PrimaryKey val imageId: String,
+data class SymptomLogEntity(
+    @PrimaryKey val id: String,
     val petId: String,
-    val imageUrl: String,
-    val description: String? = null
+    val name: String,
+    val description: String,
+    val timestamp: Long = System.currentTimeMillis()
 )
-

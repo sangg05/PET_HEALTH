@@ -1,21 +1,26 @@
 package pet_health.data.local
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import pet_health.data.local.dao.*
 import com.example.pet_health.data.entity.*
+import com.example.pet_health.data.local.dao.PetDao
+import com.example.pet_health.data.local.dao.SymptomLogDao
 
 @Database(
     entities = [
         UserEntity::class,
         PetEntity::class,
         HealthRecordEntity::class,
+        SymptomLogEntity::class,
         ReminderEntity::class,
         VaccineEntity::class,
         UserActivityLogEntity::class,
         PetImageEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -27,4 +32,25 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun vaccineDao(): VaccineDao
     abstract fun userActivityLogDao(): UserActivityLogDao
     abstract fun petImageDao(): PetImageDao
+    abstract fun symptomLogDao(): SymptomLogDao
+
+
+
+    companion object{
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
+        fun getDatabase(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "pet_app_database"
+                ).fallbackToDestructiveMigration()
+                    .build()
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
 }
