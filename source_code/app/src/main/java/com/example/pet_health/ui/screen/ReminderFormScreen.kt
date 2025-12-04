@@ -2,6 +2,7 @@ package com.example.pet_health.ui.screen
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -33,25 +34,27 @@ import java.util.UUID
 // Import đúng ViewModel và Entity
 import com.example.pet_health.ui.viewmodel.ReminderViewModel
 import com.example.pet_health.data.entity.Reminder
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderFormScreen(
     navController: NavController? = null,
     viewModel: ReminderViewModel,
-    reminderId: String? = null // <--- 1. NHẬN ID ĐỂ BIẾT LÀ SỬA HAY THÊM
+    reminderId: String? = null
 ) {
 
     // ==== FORM STATES ====
     var petName by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf("") }
-    var otherTypeInput by remember { mutableStateOf("") } // Input cho loại "Khác"
+    var otherTypeInput by remember { mutableStateOf("") }
 
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
     var repeat by remember { mutableStateOf("Không") }
-    // Di chuyển state customRepeat lên đây để dễ gán dữ liệu cũ
     var customRepeat by remember { mutableStateOf("") }
     var earlyNotify by remember { mutableStateOf("Không") }
     var note by remember { mutableStateOf("") }
@@ -66,7 +69,7 @@ fun ReminderFormScreen(
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
 
-    // ==== 2. LOGIC ĐIỀN DỮ LIỆU CŨ (NẾU LÀ SỬA) ====
+    // ==== LOGIC ĐIỀN DỮ LIỆU CŨ ====
     LaunchedEffect(reminderId) {
         if (reminderId != null) {
             val existing = viewModel.getReminderById(reminderId)
@@ -78,21 +81,16 @@ fun ReminderFormScreen(
                 earlyNotify = existing.earlyNotify
                 note = existing.note
 
-                // Xử lý Loại nhắc (Type)
                 val defaultTypes = listOf("Tiêm phòng", "Tẩy giun", "Tái khám", "Thuốc")
                 if (existing.type in defaultTypes) {
                     selectedType = existing.type
                 } else {
-                    // Nếu loại không nằm trong list mặc định -> Là loại "Khác"
                     selectedType = "Khác"
                     otherTypeInput = existing.type
                 }
 
-                // Xử lý Lặp lại (Repeat)
-                // Format lưu: "10 ngày (Tùy chỉnh)"
                 if (existing.repeat.contains("(Tùy chỉnh)")) {
                     repeat = "Tùy chỉnh"
-                    // Cắt chuỗi để lấy số ngày. VD: "10 ngày..." -> lấy "10"
                     customRepeat = existing.repeat.substringBefore(" ngày")
                 } else {
                     repeat = existing.repeat
@@ -101,19 +99,50 @@ fun ReminderFormScreen(
         }
     }
 
-    // Date Picker Logic
+    // ==== 1. DATE PICKER LOGIC (CHẶN NGÀY QUÁ KHỨ) ====
     val datePickerDialog = DatePickerDialog(
         context,
-        { _, y, m, d -> date = "%02d/%02d/%04d".format(d, m + 1, y) },
+        { _, y, m, d ->
+            val selectedDateStr = "%02d/%02d/%04d".format(d, m + 1, y)
+            date = selectedDateStr
+            dateError = "" // Xóa lỗi khi chọn xong
+
+            // Nếu đã chọn giờ trước đó, cần kiểm tra lại xem sự kết hợp Ngày mới + Giờ cũ có hợp lệ không
+            if (time.isNotEmpty()) {
+                if (isPastTime(selectedDateStr, time)) {
+                    timeError = "Giờ đã chọn nằm trong quá khứ so với ngày mới"
+                } else {
+                    timeError = ""
+                }
+            }
+        },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
+    // Thiết lập giới hạn tối thiểu là thời điểm hiện tại - 1 giây
+    datePickerDialog.datePicker.minDate = System.currentTimeMillis() - 1000
 
-    // Time Picker Logic
+
+    // ==== 2. TIME PICKER LOGIC (CHẶN GIỜ QUÁ KHỨ) ====
     val timePickerDialog = TimePickerDialog(
         context,
-        { _, h, min -> time = "%02d:%02d".format(h, min) },
+        { _, h, min ->
+            val selectedTimeStr = "%02d:%02d".format(h, min)
+
+            // Nếu chưa chọn ngày, mặc định kiểm tra với ngày hôm nay
+            val checkDate = if (date.isNotEmpty()) date else SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+
+            if (isPastTime(checkDate, selectedTimeStr)) {
+                // Nếu chọn giờ quá khứ -> Báo lỗi và không gán giá trị (hoặc gán nhưng báo đỏ)
+                time = selectedTimeStr
+                timeError = "Không thể chọn thời gian trong quá khứ"
+                Toast.makeText(context, "Thời gian đã chọn không hợp lệ", Toast.LENGTH_SHORT).show()
+            } else {
+                time = selectedTimeStr
+                timeError = ""
+            }
+        },
         calendar.get(Calendar.HOUR_OF_DAY),
         calendar.get(Calendar.MINUTE),
         true
@@ -122,7 +151,6 @@ fun ReminderFormScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                // Đổi tiêu đề tùy theo chế độ
                 title = { Text(if (reminderId == null) "Tạo nhắc" else "Cập nhật nhắc", fontWeight = FontWeight.Bold, color = Color.Black) },
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
@@ -155,10 +183,7 @@ fun ReminderFormScreen(
                 Text("Tên thú cưng", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 OutlinedTextField(
                     value = petName,
-                    onValueChange = {
-                        petName = it
-                        petError = ""
-                    },
+                    onValueChange = { petName = it; petError = "" },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(13.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -174,10 +199,7 @@ fun ReminderFormScreen(
                 Text("Tiêu đề", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 OutlinedTextField(
                     value = title,
-                    onValueChange = {
-                        title = it
-                        titleError = ""
-                    },
+                    onValueChange = { title = it; titleError = "" },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(13.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -197,10 +219,7 @@ fun ReminderFormScreen(
                     types.forEach { type ->
                         FilterChip(
                             selected = selectedType == type,
-                            onClick = {
-                                selectedType = type
-                                typeError = ""
-                            },
+                            onClick = { selectedType = type; typeError = "" },
                             label = { Text(type, color = Color.Black) },
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = Color.White,
@@ -211,7 +230,6 @@ fun ReminderFormScreen(
                     }
                 }
 
-                // Hiển thị ô nhập nếu chọn "Khác"
                 if (selectedType == "Khác") {
                     Spacer(Modifier.height(10.dp))
                     OutlinedTextField(
@@ -305,7 +323,6 @@ fun ReminderFormScreen(
                     }
                 }
 
-                // Tùy chỉnh lặp lại
                 if (repeat == "Tùy chỉnh") {
                     Spacer(Modifier.height(10.dp))
                     Text("Nhập chu kì lặp (số ngày)", fontWeight = FontWeight.Bold, fontSize = 15.sp)
@@ -365,7 +382,6 @@ fun ReminderFormScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    // Nút Reset / Xóa trắng
                     Button(
                         onClick = {
                             petName = ""; title = ""; note = ""
@@ -378,13 +394,11 @@ fun ReminderFormScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) { Text("Xóa trắng", color = Color.White) }
 
-                    // Nút Hủy
                     Button(
                         onClick = { navController?.popBackStack() },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3FFB3))
                     ) { Text("Hủy", color = Color.Black) }
 
-                    // Nút Lưu / Cập nhật
                     Button(
                         onClick = {
                             // ==== VALIDATION ====
@@ -394,6 +408,12 @@ fun ReminderFormScreen(
                             if (date.isBlank()) { dateError = "Vui lòng chọn ngày"; isValid = false }
                             if (time.isBlank()) { timeError = "Vui lòng chọn giờ"; isValid = false }
 
+                            // Check lại lỗi thời gian lần cuối
+                            if (date.isNotEmpty() && time.isNotEmpty() && isPastTime(date, time)) {
+                                timeError = "Thời gian không hợp lệ (quá khứ)"
+                                isValid = false
+                            }
+
                             if (selectedType.isBlank()) {
                                 typeError = "Vui lòng chọn loại nhắc"; isValid = false
                             } else if (selectedType == "Khác" && otherTypeInput.isBlank()) {
@@ -402,12 +422,9 @@ fun ReminderFormScreen(
 
                             if (!isValid) return@Button
 
-                            // ==== 3. XỬ LÝ LƯU / CẬP NHẬT ====
+                            // ==== SAVE ====
                             val finalType = if (selectedType == "Khác") otherTypeInput.trim() else selectedType
-                            // Thêm suffix (Tùy chỉnh) để lúc load lại biết đường mà parse
-                            val finalRepeat = if (repeat == "Tùy chỉnh") "$customRepeat ngày" else repeat
-
-                            // Nếu đang Edit thì dùng ID cũ, nếu Tạo mới thì sinh ID mới
+                            val finalRepeat = if (repeat == "Tùy chỉnh") "$customRepeat ngày (Tùy chỉnh)" else repeat
                             val idToSave = reminderId ?: UUID.randomUUID().toString()
 
                             val reminderToSave = Reminder(
@@ -420,14 +437,12 @@ fun ReminderFormScreen(
                                 repeat = finalRepeat,
                                 earlyNotify = earlyNotify,
                                 note = note,
-                                status = "Sắp tới" // Mặc định hoặc có thể giữ status cũ nếu muốn
+                                status = "Sắp tới"
                             )
 
                             if (reminderId != null) {
-                                // Gọi hàm CẬP NHẬT
                                 viewModel.updateReminder(reminderToSave)
                             } else {
-                                // Gọi hàm THÊM MỚI
                                 viewModel.addReminder(reminderToSave)
                             }
 
@@ -435,11 +450,22 @@ fun ReminderFormScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                     ) {
-                        // Đổi chữ hiển thị
                         Text(if(reminderId != null) "Cập nhật" else "Lưu", color = Color.White)
                     }
                 }
             }
         }
+    }
+}
+
+// ==== HÀM HELPER ĐỂ CHECK GIỜ QUÁ KHỨ ====
+fun isPastTime(dateStr: String, timeStr: String): Boolean {
+    return try {
+        val format = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val dateTime = format.parse("$dateStr $timeStr")
+        val now = Date()
+        dateTime != null && dateTime.before(now)
+    } catch (e: Exception) {
+        false // Nếu lỗi parse thì coi như không phải quá khứ (hoặc xử lý tùy ý)
     }
 }

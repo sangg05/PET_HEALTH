@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +30,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,23 +50,30 @@ fun ReminderScreen(
     val defaultTypes = listOf("Tiêm phòng", "Tẩy giun", "Tái khám", "Thuốc")
     val filterOptions = listOf("Tất cả") + defaultTypes + "Khác"
 
-    // 2. Logic lọc danh sách (QUAN TRỌNG)
+    // 2. Logic lọc danh sách (QUAN TRỌNG: CẬP NHẬT LOGIC SO SÁNH GIỜ)
     val filteredList = remember(reminderList, selectedTab, selectedFilter, searchText) {
-        // Lấy ngày hiện tại (đặt giờ về 00:00:00 để so sánh chính xác theo ngày)
-        val today = getStartOfDay(Date())
+        // Lấy thời điểm hiện tại chính xác từng giây
+        val now = Date()
 
         reminderList.filter { reminder ->
-            // --- A. Lọc theo Tab (Logic thời gian) ---
-            val reminderDate = parseDate(reminder.date) ?: Date() // Parse ngày từ String
+            // --- A. Lọc theo Tab (Logic thời gian chi tiết Ngày + Giờ) ---
+
+            // Gộp ngày và giờ của reminder thành 1 đối tượng Date để so sánh
+            val reminderDateTime = parseDateTime(reminder.date, reminder.time)
 
             val isTabMatch = when (selectedTab) {
-                0 -> { // Sắp tới: Chưa xong VÀ (Ngày >= Hôm nay)
-                    reminder.status != "Hoàn thành" && (reminderDate.after(today) || isSameDay(reminderDate, today))
+                0 -> { // Sắp tới:
+                    // Chưa xong VÀ (Thời gian nhắc > Thời gian hiện tại)
+                    reminder.status != "Hoàn thành" &&
+                            (reminderDateTime != null && reminderDateTime.after(now))
                 }
-                1 -> { // Quá hạn: Chưa xong VÀ (Ngày < Hôm nay)
-                    reminder.status != "Hoàn thành" && reminderDate.before(today)
+                1 -> { // Quá hạn:
+                    // Chưa xong VÀ (Thời gian nhắc <= Thời gian hiện tại)
+                    reminder.status != "Hoàn thành" &&
+                            (reminderDateTime != null && reminderDateTime.before(now))
                 }
-                2 -> { // Đã xong: Chỉ cần trạng thái là Hoàn thành (bất kể ngày)
+                2 -> { // Đã xong:
+                    // Trạng thái là Hoàn thành (không quan tâm ngày giờ)
                     reminder.status == "Hoàn thành"
                 }
                 else -> true
@@ -85,9 +92,11 @@ fun ReminderScreen(
             // Kết hợp cả 3 điều kiện
             isTabMatch && isTypeMatch && isSearchMatch
         }.sortedBy {
-            // Sắp xếp: Nếu tab là Sắp tới -> Ngày gần nhất lên đầu. Các tab khác -> Ngày mới nhất lên đầu
-            parseDate(it.date)?.time
+            // Sắp xếp
+            parseDateTime(it.date, it.time)?.time
         }.let { list ->
+            // Tab Sắp tới: Việc gần nhất lên đầu
+            // Tab Quá hạn/Đã xong: Việc mới nhất lên đầu (đảo ngược)
             if (selectedTab == 0) list else list.reversed()
         }
     }
@@ -136,7 +145,6 @@ fun ReminderScreen(
             }
         },
         bottomBar = {
-            // Thanh Bottom Bar cũ
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -145,7 +153,7 @@ fun ReminderScreen(
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF7B1FA2), modifier = Modifier.size(32.dp))
                 Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
                 Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
             }
@@ -158,7 +166,7 @@ fun ReminderScreen(
                 .padding(innerPadding)
                 .background(
                     brush = Brush.verticalGradient(
-                        listOf(Color(0xFFF7C8E0), Color(0xFFF9E6F2))
+                        listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
                     )
                 )
         ) {
@@ -204,10 +212,13 @@ fun ReminderScreen(
 
                 // ===== List of reminders =====
                 if (filteredList.isEmpty()) {
-                    // Hiển thị thông báo nếu danh sách trống
                     Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Không có lịch nhắc nào",
+                            text = when(selectedTab) {
+                                0 -> "Không có lịch sắp tới"
+                                1 -> "Không có lịch quá hạn"
+                                else -> "Chưa có lịch hoàn thành"
+                            },
                             color = Color.Gray,
                             fontSize = 16.sp
                         )
@@ -247,33 +258,20 @@ fun ReminderScreen(
 }
 
 
-// ==================== HELPER FUNCTIONS (XỬ LÝ NGÀY THÁNG) ====================
-fun parseDate(dateStr: String): Date? {
+// ==================== HELPER FUNCTIONS (CẬP NHẬT MỚI) ====================
+
+// Hàm gộp ngày và giờ thành 1 đối tượng Date duy nhất
+fun parseDateTime(dateStr: String, timeStr: String): Date? {
     return try {
-        // Định dạng ngày phải khớp với lúc bạn lưu (dd/MM/yyyy)
-        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(dateStr)
+        // Định dạng phải khớp với input: "dd/MM/yyyy HH:mm"
+        val format = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        format.parse("$dateStr $timeStr")
     } catch (e: Exception) {
         null
     }
 }
 
-fun getStartOfDay(date: Date): Date {
-    val calendar = Calendar.getInstance()
-    calendar.time = date
-    calendar.set(Calendar.HOUR_OF_DAY, 0)
-    calendar.set(Calendar.MINUTE, 0)
-    calendar.set(Calendar.SECOND, 0)
-    calendar.set(Calendar.MILLISECOND, 0)
-    return calendar.time
-}
-
-fun isSameDay(date1: Date, date2: Date): Boolean {
-    val fmt = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
-    return fmt.format(date1) == fmt.format(date2)
-}
-
-
-// ==================== FILTER CHIP ====================
+// ==================== COMPONENTS ====================
 @Composable
 fun FilterChipStyled(text: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
@@ -290,7 +288,6 @@ fun FilterChipStyled(text: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-// ==================== CARD ====================
 @Composable
 fun ReminderCardStyled(
     reminder: Reminder,
@@ -303,11 +300,14 @@ fun ReminderCardStyled(
         else -> Color.White
     }
 
-    // Hiển thị nhãn trạng thái khác nhau tùy Tab (để người dùng dễ hiểu)
-    // Nếu chưa xong mà ngày < hôm nay => Hiển thị "Quá hạn" màu đỏ
-    val today = getStartOfDay(Date())
-    val rDate = parseDate(reminder.date)
-    val isOverdue = reminder.status != "Hoàn thành" && rDate != null && rDate.before(today)
+    // Logic hiển thị nhãn trạng thái (Quá hạn/Sắp tới)
+    val now = Date()
+    val reminderTime = parseDateTime(reminder.date, reminder.time)
+
+    // Kiểm tra quá hạn chính xác từng phút
+    val isOverdue = reminder.status != "Hoàn thành" &&
+            reminderTime != null &&
+            reminderTime.before(now)
 
     Card(
         modifier = Modifier
@@ -325,7 +325,6 @@ fun ReminderCardStyled(
             ) {
                 Text(reminder.type, color = Color(0xFF6A1B9A), fontWeight = FontWeight.Bold)
 
-                // Logic hiển thị text trạng thái góc phải
                 if (reminder.status == "Hoàn thành") {
                     Text("Đã xong", fontSize = 12.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
                 } else if (isOverdue) {
