@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.google.accompanist.flowlayout.FlowRow
@@ -34,6 +35,10 @@ import java.util.UUID
 // Import đúng ViewModel và Entity
 import com.example.pet_health.ui.viewmodel.ReminderViewModel
 import com.example.pet_health.data.entity.Reminder
+import com.example.pet_health.data.repository.PetRepository
+import com.example.pet_health.ui.viewmodel.PetViewModel
+import com.example.pet_health.ui.viewmodel.PetViewModelFactory
+import pet_health.data.local.AppDatabase
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -45,9 +50,21 @@ fun ReminderFormScreen(
     viewModel: ReminderViewModel,
     reminderId: String? = null
 ) {
+    val context = LocalContext.current
+
+    // ==== KHỞI TẠO PET VIEWMODEL ĐỂ LẤY DANH SÁCH THÚ CƯNG ====
+    val db = AppDatabase.getDatabase(context)
+    val petRepo = PetRepository(db)
+    val petViewModel: PetViewModel = viewModel(factory = PetViewModelFactory(petRepo))
+
+    // Load danh sách pet
+    LaunchedEffect(Unit) {
+        petViewModel.fetchPetsFromFirebaseToRoom()
+    }
+    val pets by petViewModel.pets
 
     // ==== FORM STATES ====
-    var petName by remember { mutableStateOf("") }
+    var petName by remember { mutableStateOf("") } // Biến này giờ sẽ lưu TÊN thú cưng đã chọn
     var title by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf("") }
     var otherTypeInput by remember { mutableStateOf("") }
@@ -59,6 +76,9 @@ fun ReminderFormScreen(
     var earlyNotify by remember { mutableStateOf("Không") }
     var note by remember { mutableStateOf("") }
 
+    // State cho Dropdown
+    var expanded by remember { mutableStateOf(false) }
+
     // ==== ERROR STATES ====
     var petError by remember { mutableStateOf("") }
     var titleError by remember { mutableStateOf("") }
@@ -66,15 +86,14 @@ fun ReminderFormScreen(
     var dateError by remember { mutableStateOf("") }
     var timeError by remember { mutableStateOf("") }
 
-    val context = LocalContext.current
     val calendar = Calendar.getInstance()
 
-    // ==== LOGIC ĐIỀN DỮ LIỆU CŨ ====
+    // ==== LOGIC ĐIỀN DỮ LIỆU CŨ (EDIT) ====
     LaunchedEffect(reminderId) {
         if (reminderId != null) {
             val existing = viewModel.getReminderById(reminderId)
             if (existing != null) {
-                petName = existing.petName
+                petName = existing.petName // Điền tên cũ
                 title = existing.title
                 date = existing.date
                 time = existing.time
@@ -99,15 +118,13 @@ fun ReminderFormScreen(
         }
     }
 
-    // ==== 1. DATE PICKER LOGIC (CHẶN NGÀY QUÁ KHỨ) ====
+    // ... (Date/Time Picker Logic giữ nguyên) ...
     val datePickerDialog = DatePickerDialog(
         context,
         { _, y, m, d ->
             val selectedDateStr = "%02d/%02d/%04d".format(d, m + 1, y)
             date = selectedDateStr
-            dateError = "" // Xóa lỗi khi chọn xong
-
-            // Nếu đã chọn giờ trước đó, cần kiểm tra lại xem sự kết hợp Ngày mới + Giờ cũ có hợp lệ không
+            dateError = ""
             if (time.isNotEmpty()) {
                 if (isPastTime(selectedDateStr, time)) {
                     timeError = "Giờ đã chọn nằm trong quá khứ so với ngày mới"
@@ -120,21 +137,15 @@ fun ReminderFormScreen(
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
-    // Thiết lập giới hạn tối thiểu là thời điểm hiện tại - 1 giây
     datePickerDialog.datePicker.minDate = System.currentTimeMillis() - 1000
 
-
-    // ==== 2. TIME PICKER LOGIC (CHẶN GIỜ QUÁ KHỨ) ====
     val timePickerDialog = TimePickerDialog(
         context,
         { _, h, min ->
             val selectedTimeStr = "%02d:%02d".format(h, min)
-
-            // Nếu chưa chọn ngày, mặc định kiểm tra với ngày hôm nay
             val checkDate = if (date.isNotEmpty()) date else SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
 
             if (isPastTime(checkDate, selectedTimeStr)) {
-                // Nếu chọn giờ quá khứ -> Báo lỗi và không gán giá trị (hoặc gán nhưng báo đỏ)
                 time = selectedTimeStr
                 timeError = "Không thể chọn thời gian trong quá khứ"
                 Toast.makeText(context, "Thời gian đã chọn không hợp lệ", Toast.LENGTH_SHORT).show()
@@ -179,18 +190,54 @@ fun ReminderFormScreen(
                     .padding(16.dp)
 
             ) {
-                // ==== 1. THÚ CƯNG ====
+                // ==== 1. THÚ CƯNG (DROPDOWN MỚI) ====
                 Text("Tên thú cưng", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                OutlinedTextField(
-                    value = petName,
-                    onValueChange = { petName = it; petError = "" },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(13.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.White,
-                        focusedContainerColor = Color.White
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = petName,
+                        onValueChange = {}, // Read only
+                        readOnly = true,
+                        placeholder = { Text("Chọn thú cưng") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(), // Quan trọng: neo menu vào đây
+                        shape = RoundedCornerShape(13.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        )
                     )
-                )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        if (pets.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("Chưa có thú cưng nào", color = Color.Gray) },
+                                onClick = { expanded = false }
+                            )
+                        } else {
+                            pets.forEach { pet ->
+                                DropdownMenuItem(
+                                    text = { Text(pet.name) },
+                                    onClick = {
+                                        petName = pet.name
+                                        petError = ""
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 if (petError.isNotEmpty()) Text(petError, color = Color.Red, fontSize = 13.sp)
 
                 Spacer(Modifier.height(10.dp))
@@ -403,12 +450,11 @@ fun ReminderFormScreen(
                         onClick = {
                             // ==== VALIDATION ====
                             var isValid = true
-                            if (petName.isBlank()) { petError = "Vui lòng nhập tên thú cưng"; isValid = false }
+                            if (petName.isBlank()) { petError = "Vui lòng chọn thú cưng"; isValid = false }
                             if (title.isBlank()) { titleError = "Vui lòng nhập tiêu đề"; isValid = false }
                             if (date.isBlank()) { dateError = "Vui lòng chọn ngày"; isValid = false }
                             if (time.isBlank()) { timeError = "Vui lòng chọn giờ"; isValid = false }
 
-                            // Check lại lỗi thời gian lần cuối
                             if (date.isNotEmpty() && time.isNotEmpty() && isPastTime(date, time)) {
                                 timeError = "Thời gian không hợp lệ (quá khứ)"
                                 isValid = false
@@ -429,7 +475,7 @@ fun ReminderFormScreen(
 
                             val reminderToSave = Reminder(
                                 id = idToSave,
-                                petName = petName,
+                                petName = petName, // Lưu tên thú cưng
                                 title = title,
                                 type = finalType,
                                 date = date,
@@ -458,7 +504,7 @@ fun ReminderFormScreen(
     }
 }
 
-// ==== HÀM HELPER ĐỂ CHECK GIỜ QUÁ KHỨ ====
+// ==== HÀM HELPER GIỮ NGUYÊN ====
 fun isPastTime(dateStr: String, timeStr: String): Boolean {
     return try {
         val format = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -466,6 +512,6 @@ fun isPastTime(dateStr: String, timeStr: String): Boolean {
         val now = Date()
         dateTime != null && dateTime.before(now)
     } catch (e: Exception) {
-        false // Nếu lỗi parse thì coi như không phải quá khứ (hoặc xử lý tùy ý)
+        false
     }
 }
