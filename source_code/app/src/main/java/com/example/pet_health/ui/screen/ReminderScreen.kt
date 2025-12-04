@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,38 +20,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.compose.foundation.BorderStroke
 import com.google.accompanist.flowlayout.FlowRow
-import com.example.pet_health.FilterChipStyled
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
-// ==================== DATA MODEL ====================
-data class Reminder(
-    val id: Int,
-    val type: String,
-    val title: String,
-    val date: String,
-    val time: String,
-    val repeat: String,
-    val early: String = ""   // ★ thêm default để tránh crash
-)
+// Import đúng Entity và ViewModel
+import com.example.pet_health.data.entity.Reminder
+import com.example.pet_health.ui.viewmodel.ReminderViewModel
+
+// ==================== (ĐÃ XÓA LOCAL DATA MODEL Ở ĐÂY) ====================
 
 // ==================== MAIN SCREEN ====================
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReminderScreen(navController: NavController? = null) {
-
-    var reminderList by remember {
-        mutableStateOf(
-            mutableListOf(
-                Reminder(1, "Tiêm phòng", "Mũi FVRCP #4", "25/10/2026", "9:00", "6 tháng", "30 phút"),
-                Reminder(2, "Tiêm phòng", "Mũi FVRCP #3", "25/04/2025", "9:00", "6 tháng", "1 giờ")
-            )
-        )
-    }
-
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Sắp tới", "Quá hạn", "Đã xong")
+fun ReminderScreen(
+    navController: NavController? = null,
+    viewModel: ReminderViewModel // <--- Inject ViewModel
+) {
+    // Lấy dữ liệu từ ViewModel thay vì tạo biến local
+    val reminderList by viewModel.reminders
 
     var selectedFilter by remember { mutableStateOf("Tất cả") }
     var searchText by remember { mutableStateOf("") }
@@ -60,224 +46,197 @@ fun ReminderScreen(navController: NavController? = null) {
                 (searchText.isBlank() || it.title.contains(searchText, ignoreCase = true))
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    listOf(Color(0xFFF7C8E0), Color(0xFFF9E6F2))
-                )
-            )
-            .padding(16.dp)
-    ) {
-        // ===== Header =====
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { navController?.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF4A004A))
-            }
-            Text(
-                "Nhắc lịch",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF4A004A)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // ===== Tabs =====
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            tabs.forEachIndexed { index, text ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { selectedTab = index }
-                ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
                     Text(
-                        text,
-                        fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 20.sp,
-                        color = if (selectedTab == index) Color(0xFF5D2C02) else Color.Gray
+                        "Nhắc lịch",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
-                    if (selectedTab == index) {
-                        Box(
-                            modifier = Modifier
-                                .height(3.dp)
-                                .width(50.dp)
-                                .background(Color(0xFF5D2C02))
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController?.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB)) // lightPink
+            )
+        },
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(Color.White),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+            }
+        }
+    ) { innerPadding ->
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(
+                    brush = Brush.verticalGradient(
+                        listOf(Color(0xFFF7C8E0), Color(0xFFF9E6F2))
+                    )
+                )
+        ) {
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+
+                // ===== Search Bar =====
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    placeholder = { Text("Tìm kiếm...") },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = Color.Gray,
+                        focusedBorderColor = Color(0xFF9C27B0),
+                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = Color.White
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                // ===== Filter Chips =====
+                val filters = listOf("Tất cả", "Tiêm phòng", "Tẩy giun", "Tái khám", "Thuốc", "Khác")
+                FlowRow(
+                    mainAxisSpacing = 8.dp,
+                    crossAxisSpacing = 8.dp
+                ) {
+                    filters.forEach { item ->
+                        FilterChipStyled(
+                            text = item,
+                            selected = item == selectedFilter,
+                            onClick = { selectedFilter = item }
                         )
-                    } else {
-                        Spacer(Modifier.height(3.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // ===== List of reminders =====
+                LazyColumn(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Entity Reminder dùng String ID (UUID) nên key vẫn OK
+                    items(filteredList, key = { it.id }) { reminder ->
+
+                        ReminderCardStyled(
+                            reminder = reminder,
+                            onClick = {
+                                // QUAN TRỌNG: Chỉ truyền ID, bên Detail sẽ tự lấy data từ ViewModel
+                                navController?.navigate("reminder_detail/${reminder.id}")
+                            },
+                            onDelete = {
+                                // Gọi hàm xóa từ ViewModel
+                                viewModel.deleteReminder(reminder.id)
+                            }
+                        )
                     }
                 }
             }
-        }
 
-        Spacer(Modifier.height(20.dp))
-
-        // ===== Search Box =====
-        OutlinedTextField(
-            value = searchText,
-            onValueChange = { searchText = it },
-            placeholder = { Text("Tìm kiếm...") },
-            shape = RoundedCornerShape(13.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color.Gray,
-                focusedBorderColor = Color(0xFF9C27B0),
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        // ===== Filter Chips =====
-        val filters = listOf("Tất cả", "Tiêm phòng", "Tẩy giun", "Tái khám", "Thuốc", "Khác")
-
-        FlowRow(
-            mainAxisSpacing = 8.dp,
-            crossAxisSpacing = 8.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            filters.forEach { item ->
-                FilterChipStyled(
-                    text = item,
-                    selected = item == selectedFilter,
-                    onClick = { selectedFilter = item }
-                )
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // ===== LIST =====
-        LazyColumn(
-            modifier = Modifier.weight(1f)
-        ) {
-            items(filteredList, key = { it.id }) { reminder ->
-
-                ReminderCardStyled(
-                    reminder = reminder,
-                    onClick = {
-                        // =============== Encode Safe ===============
-                        val encodedType = URLEncoder.encode(reminder.type, StandardCharsets.UTF_8)
-                        val encodedTitle = URLEncoder.encode(reminder.title, StandardCharsets.UTF_8)
-                        val encodedDate = URLEncoder.encode(reminder.date, StandardCharsets.UTF_8)
-                        val encodedTime = URLEncoder.encode(reminder.time, StandardCharsets.UTF_8)
-                        val encodedRepeat = URLEncoder.encode(reminder.repeat, StandardCharsets.UTF_8)
-                        val encodedEarly = URLEncoder.encode(reminder.early, StandardCharsets.UTF_8)
-
-                        navController?.navigate(
-                            "reminder_detail/${reminder.id}/$encodedType/$encodedTitle/$encodedDate/$encodedTime/$encodedRepeat/$encodedEarly"
-                        )
-                    },
-
-                    onDelete = {
-                        reminderList = reminderList.filterNot { it.id == reminder.id }.toMutableList()
-                    }
-                )
-            }
-        }
-
-        // ===== Vaccine Book Button =====
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Button(
-                onClick = { navController?.navigate("tiem_thuoc_list") },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD1B3F1)),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Text("Sổ tiêm & thuốc", color = Color.White, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        // ===== Add Button =====
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            // ===== Floating Action Button =====
             FloatingActionButton(
                 onClick = { navController?.navigate("reminder_form") },
                 containerColor = Color(0xFFB6F2B8),
                 shape = CircleShape,
-                modifier = Modifier.size(58.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.Black, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.Black)
             }
         }
+    }
+}
 
-        Spacer(Modifier.height(12.dp))
-        BottomNavigationBarStyled(navController)
+
+// ==================== FILTER CHIP ====================
+@Composable
+fun FilterChipStyled(text: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        color = if (selected) Color(0xFFCE93D8) else Color.White,
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, Color(0xFF9C27B0)),
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            color = if (selected) Color.White else Color.Black
+        )
     }
 }
 
 // ==================== CARD ====================
 @Composable
 fun ReminderCardStyled(
-    reminder: Reminder,
+    reminder: Reminder, // Lúc này Reminder là class từ data.entity
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    // Đổi màu thẻ dựa trên trạng thái
+    val cardColor = when(reminder.status) {
+        "Hoàn thành" -> Color(0xFFB6F2B8) // Xanh nhạt
+        "Hoãn lại" -> Color(0xFFFFCCCC)   // Đỏ nhạt
+        else -> Color.White
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         border = BorderStroke(1.5.dp, Color(0xFF8A2BE2))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(reminder.type, color = Color(0xFF6A1B9A), fontWeight = FontWeight.Bold)
+            // Header: Loại + Trạng thái
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(reminder.type, color = Color(0xFF6A1B9A), fontWeight = FontWeight.Bold)
+                if (reminder.status != "Sắp tới") {
+                    Text(reminder.status, fontSize = 12.sp, color = Color.Gray)
+                }
+            }
+
             Text(reminder.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
             Spacer(Modifier.height(6.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("${reminder.time}   ${reminder.date}", color = Color.Black)
+                    Text("${reminder.time}   ${reminder.date}")
                     Text("Lặp: ${reminder.repeat}", color = Color.DarkGray, fontSize = 13.sp)
                 }
-                Row {
-                    Icon(Icons.Default.Done, contentDescription = null, tint = Color(0xFF4CAF50))
-                    Spacer(Modifier.width(10.dp))
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = Color(0xFFFF3B30),
-                        modifier = Modifier.clickable { onDelete() }
-                    )
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFFF3B30))
                 }
             }
         }
-    }
-}
-
-// ==================== BOTTOM NAV ====================
-@Composable
-fun BottomNavigationBarStyled(navController: NavController? = null) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFFAD3F5))
-            .padding(vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("🏠", fontSize = 22.sp, modifier = Modifier.clickable {
-            navController?.navigate("reminder_screen")
-        })
-        Text("🔔", fontSize = 22.sp, modifier = Modifier.clickable {
-            navController?.navigate("notification_screen")
-        })
-        Text("👤", fontSize = 22.sp)
     }
 }

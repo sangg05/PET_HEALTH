@@ -11,7 +11,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             PetHealthTheme {
-                AppScreen()   // <-- Chỉ chạy 1 NavHost duy nhất
+                AppScreen()
             }
         }
     }
