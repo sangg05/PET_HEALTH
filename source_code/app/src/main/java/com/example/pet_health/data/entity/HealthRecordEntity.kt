@@ -18,13 +18,13 @@ import androidx.room.Index
     indices = [Index("petId")]
 )
 data class HealthRecordEntity(
-    @PrimaryKey val recordId: String,
-    val petId: String,
-    val date: Long,
-    val symptom: String? = null,
-    val diagnosis: String? = null,
-    val prescription: String? = null,
-    val weight: Float? = null,
-    val height: Float? = null,
-    val alert: Boolean = false
+    @PrimaryKey var recordId: String = "",
+    var petId: String = "",
+    var date: Long = 0L,
+    var symptom: String? = null,
+    var diagnosis: String? = null,
+    var prescription: String? = null,
+    var weight: Float? = null,
+    var height: Float? = null,
+    var alert: Boolean = false
 )

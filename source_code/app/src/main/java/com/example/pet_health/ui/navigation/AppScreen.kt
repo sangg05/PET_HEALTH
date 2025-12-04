@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -30,11 +31,24 @@ import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.NotificationScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
+import com.example.pet_health.ui.viewmodel.HealthRecordViewModel
+import com.example.pet_health.ui.viewmodel.HealthRecordViewModelFactory
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import kotlinx.coroutines.launch
 import pet_health.data.local.AppDatabase
 
+@Composable
+fun HealthRecordsNav(navController: NavController) {
+    val context = LocalContext.current
+    val database = AppDatabase.getDatabase(context)
+    val repository = PetRepository(database)
+
+    // Tạo 1 lần, share cho cả 2 màn hình
+    val petViewModel: PetViewModel = viewModel(factory = PetViewModelFactory(repository))
+    val healthRecordViewModel: HealthRecordViewModel = viewModel()
+
+}
 
 @Composable
 fun AppScreen() {
@@ -45,6 +59,10 @@ fun AppScreen() {
     val scope = rememberCoroutineScope()
     val database = AppDatabase.getDatabase(context)
     val repository = PetRepository(database)
+
+    val petViewModel: PetViewModel = viewModel(
+        factory = PetViewModelFactory(repository)
+    )
     NavHost(
         navController = navController,
         startDestination = "auth"
@@ -211,8 +229,33 @@ fun AppScreen() {
                     )
                 }
             }
-            composable("health_records") { HealthRecordScreen(navController) }
-            composable("add_health_record") { AddHealthRecordScreen(navController) }
+
+
+            composable("health_records") {
+                val healthRecordViewModel: HealthRecordViewModel = viewModel(factory = HealthRecordViewModelFactory())
+                HealthRecordScreen(
+                    navController = navController,
+                    petViewModel = petViewModel,
+                    healthRecordViewModel = healthRecordViewModel
+                )
+            }
+            composable("health_records") {
+                val healthRecordViewModel: HealthRecordViewModel = viewModel(factory = HealthRecordViewModelFactory())
+                HealthRecordScreen(navController, petViewModel, healthRecordViewModel)
+            }
+
+            composable(
+                route = "add_health_record?petId={petId}",
+                arguments = listOf(navArgument("petId") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                })
+            ) { backStackEntry ->
+                val petId = backStackEntry.arguments?.getString("petId") ?: ""
+                val healthRecordViewModel: HealthRecordViewModel = viewModel(factory = HealthRecordViewModelFactory())
+                AddHealthRecordScreen(navController, petViewModel, healthRecordViewModel, petId)
+            }
+
             composable("reminder") { ReminderScreen(navController) }
             composable("reminder_form") { ReminderFormScreen(navController) }
 //            composable("health_dashboard") {
@@ -241,6 +284,7 @@ fun AppScreen() {
         }
     }
 }
+
 
 
 

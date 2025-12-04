@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -24,19 +25,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import com.example.pet_health.ui.viewmodel.HealthRecordViewModel
+import com.example.pet_health.ui.viewmodel.PetViewModel
+import java.util.Calendar
+import android.app.DatePickerDialog
+import com.example.pet_health.data.entity.HealthRecordEntity
+import java.util.Locale
+import java.util.UUID
 
 val lightPink = Color(0xFFFFD2FC)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddHealthRecordScreen(navController: NavController) {
-    var name by remember { mutableStateOf("") }
-    var species by remember { mutableStateOf("") }
-    var weight by remember { mutableStateOf("") }
-    var height by remember { mutableStateOf("") }
+fun AddHealthRecordScreen(
+    navController: NavController,
+    petViewModel: PetViewModel,
+    healthRecordViewModel: HealthRecordViewModel,
+    defaultPetId: String? = null
+) {
+
+    val context = LocalContext.current
+    val pets by remember { petViewModel.pets }
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedPetName by remember { mutableStateOf("") }
+
+
+    var selectedPetId by remember { mutableStateOf(defaultPetId ?: "") }
+    var expanded by remember { mutableStateOf(false) } // dropdown
     var date by remember { mutableStateOf("") }
     var symptoms by remember { mutableStateOf("") }
     var prescription by remember { mutableStateOf("") }
+    var weight by remember { mutableStateOf("") }
+    var height by remember { mutableStateOf("") }
+
+    // DatePicker
+    val calendar = Calendar.getInstance()
+    val datePicker = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            date = "%02d/%02d/%04d".format(dayOfMonth, month + 1, year)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -106,15 +140,44 @@ fun AddHealthRecordScreen(navController: NavController) {
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Tên thú cưng",
-                    fontSize = 18.sp,
+                    text = "Thông tin bệnh án",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 8.dp),
                     textAlign = TextAlign.Center
                 )
+                Text("Chọn thú cưng", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = pets.firstOrNull { it.petId == selectedPetId }?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Thú cưng") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        pets.forEach { pet ->
+                            DropdownMenuItem(
+                                text = { Text(pet.name) },
+                                onClick = {
+                                    selectedPetId = pet.petId
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
                 // === Các trường nhập liệu ===
                 PetInputField(
                     label = "Ngày khám",
@@ -148,14 +211,17 @@ fun AddHealthRecordScreen(navController: NavController) {
                     Button(
                         // Lưu dữ liệu và quay lại trang hồ sơ
                         onClick = {
-                            val recordData = mapOf(
-                                "date" to date,
-                                "symptoms" to symptoms,
-                                "prescription" to prescription
+                            val record = HealthRecordEntity(
+                                recordId = UUID.randomUUID().toString(),
+                                petId = selectedPetId, // ID thú cưng hiện tại
+                                date = parseDateToMillis(date), // chuyển từ "dd/MM/yyyy" -> timestamp
+                                symptom = symptoms,
+                                prescription = prescription,
+                                weight = weight.toFloatOrNull(),
+                                height = height.toFloatOrNull(),
+                                alert = false
                             )
-                            navController.previousBackStackEntry
-                                ?.savedStateHandle
-                                ?.set("new_record", recordData)
+                            healthRecordViewModel.addRecord(record) // gọi ViewModel lưu vào Room/Firebase
                             navController.popBackStack()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB2F0C0)),
@@ -177,6 +243,10 @@ fun AddHealthRecordScreen(navController: NavController) {
             }
         }
     }
+}
+fun parseDateToMillis(date: String): Long {
+    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    return sdf.parse(date)?.time ?: 0L
 }
 @Composable
 fun HealthInputField(

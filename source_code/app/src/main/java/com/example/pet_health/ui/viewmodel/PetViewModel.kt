@@ -23,6 +23,7 @@ import java.util.UUID
 
 class PetViewModel(private val repository: PetRepository) : ViewModel() {
 
+
     var tempImageUri: Uri? = null
     private val _pets = mutableStateOf<List<PetEntity>>(emptyList())
     val pets: State<List<PetEntity>> = _pets
@@ -35,6 +36,7 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
 
     init {
         fetchPets()
+        loadPets()
     }
 
     private fun fetchPets() {
@@ -216,11 +218,13 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
             .document(pet.petId)
             .set(petMap)
     }
-
-//    fun getPetById(petId: String): Flow<Pet?> {
-//        return repository.getPetById(petId)
-//            .flowOn(Dispatchers.IO) // chạy trên background thread
-//    }
+    // Lấy pet theo ID
+    fun getPetById(petId: String, onResult: (PetEntity?) -> Unit) {
+        viewModelScope.launch {
+            val pet = repository.getPetById(petId)
+            onResult(pet)
+        }
+    }
 
     // Sync toàn bộ pets Room → Firebase
     fun syncAllPets() {
@@ -353,6 +357,25 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
         }
     }
 
+    fun loadPets() {
+        viewModelScope.launch {
+            try {
+                // Lấy pets từ Room trước
+                val localPets = repository.getAllPets()
+                _pets.value = localPets
+
+                // Đồng bộ từ Firebase
+                val firebasePets = repository.getPetsFromFirebase()
+                if (firebasePets.isNotEmpty()) {
+                    firebasePets.forEach { repository.insertPet(it) }
+                    _pets.value = repository.getAllPets()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
 }
 
 // Factory
@@ -365,3 +388,4 @@ class PetViewModelFactory(private val repository: PetRepository) : ViewModelProv
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+

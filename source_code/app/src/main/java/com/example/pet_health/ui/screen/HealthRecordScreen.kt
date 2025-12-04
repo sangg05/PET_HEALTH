@@ -22,24 +22,50 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.pet_health.data.entity.HealthRecordEntity
+import com.example.pet_health.ui.viewmodel.HealthRecordViewModel
+import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.google.accompanist.flowlayout.FlowRow
+import kotlinx.coroutines.flow.filter
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HealthRecordScreen(navController: NavController) {
+fun HealthRecordScreen(
+    navController: NavController,
+    petViewModel: PetViewModel,
+    healthRecordViewModel: HealthRecordViewModel
+) {
+
+    val pets = petViewModel.pets
+    val healthRecords = healthRecordViewModel.healthRecords.collectAsState()
 
     val selectedPet = remember { mutableStateOf("Tất cả") }
-    val petOptions = listOf("Tất cả", "Nâu", "Cọp", "Đậu", "Mỹ Diệu", "Mỹ Lem", "Mỹ Lem")
 
-    // Dữ liệu bệnh án dùng state để cập nhật UI khi xóa
-    val healthRecords = remember {
-        mutableStateListOf(
-            Triple("20/11/2025", "Ho, mệt", "Kháng sinh + Vitamin C"),
-            Triple("12/10/2025", "Bỏ ăn", "Men tiêu hoá"),
-            Triple("03/08/2025", "Ngứa da", "Kem bôi + thuốc dị ứng")
-        )
+    val petOptions = remember(pets.value) {
+        listOf("Tất cả") + pets.value.map { it.name }.distinct()
+    }
+
+    val filteredRecords = remember(healthRecords.value, selectedPet.value) {
+        if (selectedPet.value == "Tất cả") healthRecords.value
+        else healthRecords.value.filter { record ->
+            pets.value.firstOrNull { it.petId == record.petId }?.name == selectedPet.value
+        }
+    }
+
+    val newRecord = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.get<HealthRecordEntity>("new_record")
+
+    LaunchedEffect(newRecord) {
+        if (newRecord != null) {
+            healthRecordViewModel.addRecord(newRecord)
+            navController.currentBackStackEntry?.savedStateHandle?.remove<HealthRecordEntity>("new_record")
+        }
     }
 
     Scaffold(
@@ -135,12 +161,16 @@ fun HealthRecordScreen(navController: NavController) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                healthRecords.forEachIndexed { index, record ->
+                filteredRecords.forEach { record ->
+                    // Lấy tên thú cưng tương ứng với petId của record
+                    val petName = pets.value.firstOrNull { it.petId == record.petId }?.name ?: "Không xác định"
+
                     HealthTimelineItem(
-                        date = record.first,
-                        diagnosis = record.second,
-                        prescription = record.third,
-                        onDelete = { healthRecords.removeAt(index) }
+                        petName = petName,  // thêm tên thú cưng
+                        date = record.date.toDate(),
+                        diagnosis = record.diagnosis ?: "",
+                        prescription = record.prescription ?: "",
+                        onDelete = { healthRecordViewModel.deleteRecord(record.recordId) }
                     )
                 }
 
@@ -163,6 +193,11 @@ fun HealthRecordScreen(navController: NavController) {
             }
         }
     }
+}
+
+private fun Long.toDate(): String {
+    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    return sdf.format(Date(this))
 }
 
 @Composable
@@ -196,6 +231,7 @@ fun AppFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
 
 @Composable
 fun HealthTimelineItem(
+    petName: String,
     date: String,
     diagnosis: String,
     prescription: String,
@@ -210,6 +246,12 @@ fun HealthTimelineItem(
             .padding(vertical = 6.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = petName,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color(0xFF6200EE)
+            )
             Text(
                 text = date,
                 fontWeight = FontWeight.Bold,
