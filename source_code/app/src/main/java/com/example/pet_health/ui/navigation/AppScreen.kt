@@ -28,13 +28,18 @@ import androidx.navigation.compose.navigation
 import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
+import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.NotificationScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
 import com.example.pet_health.ui.viewmodel.HealthRecordViewModel
 import com.example.pet_health.ui.viewmodel.HealthRecordViewModelFactory
+import com.example.pet_health.ui.viewmodel.HealthTrackingViewModel
+import com.example.pet_health.ui.viewmodel.HealthTrackingViewModelFactory
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 import pet_health.data.local.AppDatabase
 
@@ -62,6 +67,10 @@ fun AppScreen() {
 
     val petViewModel: PetViewModel = viewModel(
         factory = PetViewModelFactory(repository)
+    )
+    val healthTrackingViewModel: HealthTrackingViewModel = viewModel(
+        key = "HealthTrackingVM",
+        factory = HealthTrackingViewModelFactory(repository, Firebase.auth.currentUser?.uid ?: "")
     )
     NavHost(
         navController = navController,
@@ -258,16 +267,16 @@ fun AppScreen() {
 
             composable("reminder") { ReminderScreen(navController) }
             composable("reminder_form") { ReminderFormScreen(navController) }
-//            composable("health_dashboard") {
-//                val context = LocalContext.current
-//                val db = AppDatabase.getDatabase(context) // gọi database
-//                val dao = db.petDao() // lấy PetDao
-//                val repository = PetRepository(dao)
-//                val petViewModel: PetViewModel = viewModel(
-//                    factory = PetViewModelFactory(repository)
-//                )
-//                HealthTrackingScreen(petViewModel, navController)
-//            }
+
+            composable("health_dashboard") {
+                // Chỉ dùng viewModel đã tạo sẵn, không tạo lại
+                HealthTrackingScreen(
+                    petViewModel = petViewModel,  // share chung
+                    viewModel = healthTrackingViewModel,
+                    navController = navController
+                )
+            }
+
             composable(
                 "weight_height/{petId}",
                 arguments = listOf(navArgument("petId") { type = NavType.StringType })

@@ -22,3 +22,4 @@ interface SymptomLogDao {
     suspend fun deleteLog(log: SymptomLogEntity)
 }
 
+

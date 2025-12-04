@@ -22,7 +22,7 @@ class HealthRecordViewModel : ViewModel() {
         setupRealtimeListener()
     }
 
-    // ⭐ Realtime listener - tự động cập nhật khi có thay đổi
+    // Realtime listener - tự động cập nhật khi có thay đổi
     private fun setupRealtimeListener() {
         val userId = auth.currentUser?.uid ?: return
 
@@ -38,7 +38,7 @@ class HealthRecordViewModel : ViewModel() {
                     doc.toObject(HealthRecordEntity::class.java)
                 } ?: emptyList()
 
-                // ⭐ Tự động cập nhật StateFlow
+
                 _healthRecords.value = list.sortedByDescending { it.date }
             }
     }
@@ -51,7 +51,7 @@ class HealthRecordViewModel : ViewModel() {
             .collection("health_records")
             .document(record.recordId)
             .set(record)
-        // ⭐ Không cần gọi loadRecords() vì listener sẽ tự động update
+
     }
 
     fun deleteRecord(recordId: String) {
@@ -62,7 +62,7 @@ class HealthRecordViewModel : ViewModel() {
             .collection("health_records")
             .document(recordId)
             .delete()
-        // ⭐ Không cần gọi loadRecords() vì listener sẽ tự động update
+
     }
 
     // Chỉ dùng khi cần load lại thủ công
@@ -81,7 +81,7 @@ class HealthRecordViewModel : ViewModel() {
             }
     }
 
-    // ⭐ Cleanup listener khi ViewModel bị destroy
+
     override fun onCleared() {
         super.onCleared()
         listenerRegistration?.remove()

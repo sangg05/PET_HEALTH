@@ -4,11 +4,13 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import com.example.pet_health.data.entity.PetEntity
+import com.example.pet_health.data.entity.SymptomLogEntity
 import com.example.pet_health.data.entity.UserEntity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
@@ -51,6 +53,7 @@ class UserRepository(private val context: Context) {
         }
     }
 
+
     var currentUser = mutableStateOf<UserEntity?>(null)
         private set
     suspend fun loginUser(email: String, password: String): Pair<Boolean, String> {
@@ -61,7 +64,7 @@ class UserRepository(private val context: Context) {
             val user = snapshot.toObject(UserEntity::class.java)
             user?.let {
                 withContext(Dispatchers.IO) {
-                    // ✅ Xóa dữ liệu user cũ trước
+                    // Xóa dữ liệu user cũ trước
                     database.clearAllTables()
 
                     // Lưu user mới
@@ -69,6 +72,8 @@ class UserRepository(private val context: Context) {
 
                     // Sync pets của user mới
                     syncPetsFromFirebase(uid)
+
+                    syncAllSymptomsForUser(uid)
                 }
                 currentUser.value = it
             }
@@ -114,12 +119,18 @@ class UserRepository(private val context: Context) {
     }
 
 
-    // ✅ THÊM: Hàm đăng xuất
+    //  Hàm đăng xuất
     suspend fun logoutUser() {
         auth.signOut()
         currentUser.value = null
         withContext(Dispatchers.IO) {
             database.clearAllTables()
+        }
+    }
+    private suspend fun syncAllSymptomsForUser(userId: String) {
+        val pets = database.petDao().getPetsByUserId(userId)
+        pets.forEach { pet ->
+            repository.syncSymptomsFromFirebase(pet.petId)
         }
     }
 }
@@ -128,7 +139,7 @@ class PetRepository (private val db: AppDatabase) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    // ✅ Sửa: Lấy pets theo userId
+    //  Lấy pets theo userId
     suspend fun getPetsFromFirebase(): List<PetEntity> {
         return try {
             val userId = auth.currentUser?.uid ?: return emptyList()
@@ -144,7 +155,7 @@ class PetRepository (private val db: AppDatabase) {
                 val birthDate = doc.getLong("birthDate") ?: 0L
                 PetEntity(
                     petId = doc.id,
-                    userId = doc.getString("userId") ?: "",
+                    userId = doc.getString("userId") ?: userId,
                     name = doc.getString("name") ?: "",
                     species = doc.getString("species") ?: "Tất cả",
                     breed = doc.getString("breed") ?: "",
@@ -163,11 +174,12 @@ class PetRepository (private val db: AppDatabase) {
         }
     }
 
+
     suspend fun getAllPets(): List<PetEntity> {
         return db.petDao().getAllPets()
     }
 
-    // ✅ Thêm: Lấy pets của user hiện tại từ Room
+    // Thêm: Lấy pets của user hiện tại từ Room
     suspend fun getPetsByUserId(userId: String): List<PetEntity> {
         return db.petDao().getPetsByUserId(userId)
     }
@@ -177,14 +189,29 @@ class PetRepository (private val db: AppDatabase) {
     }
 
     suspend fun updatePet(pet: PetEntity) {
-        db.petDao().updatePet(pet)
+        try {
+            // Cập nhật Room
+            db.petDao().updatePet(pet)
+
+            // Cập nhật Firebase
+            val userId = auth.currentUser?.uid ?: return
+            firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .document(pet.petId)
+                .set(pet)
+                .await()
+        } catch (e: Exception) {
+            Log.e("PetRepository", "Error updating pet", e)
+        }
     }
 
     suspend fun getPetById(petId: String): PetEntity? {
         return db.petDao().getPetById(petId)
     }
 
-    // ✅ Sửa: Lấy pet từ Firestore theo userId
+    // Lấy pet từ Firestore theo userId
     suspend fun getPetByIdFromFirestore(petId: String): PetEntity? {
         return try {
             val userId = auth.currentUser?.uid ?: return null
@@ -219,4 +246,84 @@ class PetRepository (private val db: AppDatabase) {
             e.printStackTrace()
         }
     }
+
+    // Thêm triệu chứng vào Room
+    suspend fun insertSymptom(symptom: SymptomLogEntity) {
+        db.symptomLogDao().insertLog(symptom)
+    }
+    // Đồng bộ triệu chứng lên Firebase
+    suspend fun uploadSymptomToFirebase(symptom: SymptomLogEntity) {
+        try {
+            val userId = auth.currentUser?.uid ?: return
+            firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .document(symptom.petId)
+                .collection("symptoms")
+                .document(symptom.id)
+                .set(symptom)
+                .await()
+        } catch (e: Exception) {
+            Log.e("PetRepository", "Error uploading symptom", e)
+        }
+    }
+    // Xóa triệu chứng khỏi Room
+    suspend fun deleteSymptom(symptom: SymptomLogEntity) {
+        db.symptomLogDao().deleteLog(symptom)
+    }
+    // Xóa triệu chứng khỏi Firebase
+    suspend fun deleteSymptomFromFirebase(petId: String, symptomId: String) {
+        try {
+            val userId = auth.currentUser?.uid ?: return
+            firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .document(petId)
+                .collection("symptoms")
+                .document(symptomId)
+                .delete()
+                .await()
+        } catch (e: Exception) {
+            Log.e("PetRepository", "Error deleting symptom", e)
+        }
+    }
+    // Lấy danh sách triệu chứng của pet từ Room
+    fun getSymptomsOfPet(petId: String): Flow<List<SymptomLogEntity>> {
+        return db.symptomLogDao().getLogsByPet(petId)
+    }
+    suspend fun syncSymptomsFromFirebase(petId: String) {
+        try {
+            val userId = auth.currentUser?.uid ?: return
+            val snapshot = firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .document(petId)
+                .collection("symptoms")
+                .get()
+                .await()
+
+            val symptoms = snapshot.documents.mapNotNull { doc ->
+                SymptomLogEntity(
+                    id = doc.id,
+                    petId = petId,
+                    name = doc.getString("name") ?: "",
+                    description = doc.getString("description") ?: "",
+                    timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
+                )
+            }
+
+            symptoms.forEach { symptom ->
+                db.symptomLogDao().insertLog(symptom)
+            }
+
+            Log.d("PetRepository", "Synced ${symptoms.size} symptoms for pet $petId")
+        } catch (e: Exception) {
+            Log.e("PetRepository", "Error syncing symptoms", e)
+        }
+    }
+
+
 }

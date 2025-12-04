@@ -165,7 +165,7 @@ fun AddHealthRecordScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor() // ⭐ QUAN TRỌNG: Thêm modifier này
+                            .menuAnchor()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
