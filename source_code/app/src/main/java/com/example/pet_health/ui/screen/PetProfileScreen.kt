@@ -34,6 +34,7 @@
     import coil.compose.rememberAsyncImagePainter
     import com.example.pet_health.data.entity.PetEntity
     import com.example.pet_health.data.repository.PetRepository
+    import com.example.pet_health.repository.CloudinaryRepository
     import com.example.pet_health.ui.viewmodel.PetViewModel
     import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 
@@ -43,8 +44,12 @@
     fun PetProfileScreen(pet: PetEntity, navController: NavController,repository: PetRepository)
     {
         val lightPink = Color(0xFFFFD2FC)
+        val cloudinaryRepo = CloudinaryRepository() // tạo instance thật
         val petViewModel: PetViewModel = viewModel(
-            factory = PetViewModelFactory(repository)
+            factory = PetViewModelFactory(
+                petRepository = repository,
+                cloudinaryRepository = cloudinaryRepo
+            )
         )
 
 

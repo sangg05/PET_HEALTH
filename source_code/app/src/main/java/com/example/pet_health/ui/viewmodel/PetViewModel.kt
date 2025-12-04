@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.repository.PetRepository
+import com.example.pet_health.repository.CloudinaryRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,7 +24,7 @@ import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 
-class PetViewModel(private val repository: PetRepository) : ViewModel() {
+class PetViewModel(private val repository: PetRepository,private val cloudinaryRepository: CloudinaryRepository ) : ViewModel() {
 
 
     var tempImageUri: Uri? = null
@@ -61,7 +62,7 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
                     doc.toObject(PetEntity::class.java)
                 } ?: emptyList()
 
-                // ⭐ Tự động cập nhật StateFlow
+                // Tự động cập nhật StateFlow
                 _pets.value = petsList
                 _isLoading.value = false
 
@@ -92,95 +93,104 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
         weightKg: Double,
         sizeCm: Double? = null,
         adoptionDate: Long? = null,
-        imageUri: Uri? = null, // Ảnh mới chọn
-        existingImageUrl: String? = null, // Ảnh cũ nếu edit
+        imageUri: Uri? = null,
+        existingImageUrl: String? = null,
         editMode: Boolean = false,
-        petId: String? = null, // Chỉ dùng khi edit
+        petId: String? = null,
         onDone: () -> Unit = {}
     ) {
         viewModelScope.launch {
-            _isLoading.value = true
-            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
-
-            // 1. Upload ảnh nếu có ảnh mới được chọn
-            val finalImageUrl: String? = if (imageUri != null && imageUri.toString() != existingImageUrl) {
-                // Có ảnh mới được chọn -> upload
-                try {
-                    val storage = FirebaseStorage.getInstance()
-                    val ref = storage.reference.child("pets/${UUID.randomUUID()}.jpg")
-                    ref.putFile(imageUri).await()
-                    ref.downloadUrl.await().toString()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    existingImageUrl // fallback nếu upload fail
-                }
-            } else {
-                // Không có ảnh mới -> giữ ảnh cũ
-                existingImageUrl
-            }
-
-            // 2. Tạo PetEntity
-            val pet = PetEntity(
-                petId = petId ?: UUID.randomUUID().toString(), // Dùng petId cũ nếu edit mode
-                userId = currentUserId,
-                name = name,
-                species = species,
-                breed = breed,
-                color = color,
-                imageUrl = finalImageUrl,
-                birthDate = birthDate,
-                weightKg = weightKg.toFloat(),
-                sizeCm = sizeCm?.toFloat(),
-                healthStatus = "",
-                adoptionDate = adoptionDate
-            )
-
-            // 3. Lưu Room
-            if (editMode && petId != null) {
-                repository.updatePet(pet)
-                // Cập nhật state
-                _pets.value = _pets.value.map {
-                    if (it.petId == pet.petId) pet else it
-                }
-            } else {
-                repository.insertPet(pet)
-                // Thêm vào state
-                _pets.value = _pets.value + pet
-            }
-
-            // 4. Lưu Firestore
-            val petMap = hashMapOf(
-                "petId" to pet.petId,
-                "userId" to pet.userId,
-                "name" to pet.name,
-                "species" to pet.species,
-                "breed" to pet.breed,
-                "color" to pet.color,
-                "imageUrl" to pet.imageUrl,
-                "birthDate" to pet.birthDate,
-                "weightKg" to pet.weightKg,
-                "sizeCm" to pet.sizeCm,
-                "healthStatus" to pet.healthStatus,
-                "adoptionDate" to pet.adoptionDate
-            )
-
             try {
-                FirebaseFirestore.getInstance()
-                    .collection("users")
-                    .document(currentUserId)
-                    .collection("pets")
-                    .document(pet.petId)
-                    .set(petMap)
-                    .await()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+                _isLoading.value = true
+                val currentUserId = auth.currentUser?.uid
 
-            _isLoading.value = false
-            onDone()
+                if (currentUserId == null) {
+                    _isLoading.value = false
+                    return@launch
+                }
+
+
+                // ✅ Upload ảnh qua Cloudinary
+                val finalImageUrl: String? = if (imageUri != null) {
+
+                    val result = cloudinaryRepository.uploadImage(
+                        context,
+                        imageUri,
+                        currentUserId
+                    )
+
+                    if (result.isSuccess) {
+                        val uploadedUrl = result.getOrNull()
+                        uploadedUrl
+                    } else {
+                        existingImageUrl // Fallback
+                    }
+                } else {
+                    existingImageUrl
+                }
+
+                // Tạo PetEntity
+                val newPetId = petId ?: UUID.randomUUID().toString()
+                val pet = PetEntity(
+                    petId = newPetId,
+                    userId = currentUserId,
+                    name = name,
+                    species = species,
+                    breed = breed,
+                    color = color,
+                    imageUrl = finalImageUrl,
+                    birthDate = birthDate,
+                    weightKg = weightKg.toFloat(),
+                    sizeCm = sizeCm?.toFloat(),
+                    healthStatus = "",
+                    adoptionDate = adoptionDate
+                )
+
+
+                // Lưu vào Room
+                if (editMode && petId != null) {
+                    repository.updatePet(pet)
+                    _pets.value = _pets.value.map { if (it.petId == pet.petId) pet else it }
+                } else {
+                    repository.insertPet(pet)
+                    _pets.value = _pets.value + pet
+                }
+
+                // Lưu vào Firestore
+                val petMap = hashMapOf(
+                    "petId" to pet.petId,
+                    "userId" to pet.userId,
+                    "name" to pet.name,
+                    "species" to pet.species,
+                    "breed" to pet.breed,
+                    "color" to pet.color,
+                    "imageUrl" to pet.imageUrl,
+                    "birthDate" to pet.birthDate,
+                    "weightKg" to pet.weightKg,
+                    "sizeCm" to pet.sizeCm,
+                    "healthStatus" to pet.healthStatus,
+                    "adoptionDate" to pet.adoptionDate
+                )
+
+                try {
+                    db.collection("users")
+                        .document(currentUserId)
+                        .collection("pets")
+                        .document(pet.petId)
+                        .set(petMap)
+                        .await()
+
+                } catch (e: Exception) {
+                }
+
+                _isLoading.value = false
+                onDone()
+
+            } catch (e: Exception) {
+                _isLoading.value = false
+            }
         }
     }
-
 
 
     // Upload 1 pet lên Firebase
@@ -375,11 +385,14 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
 }
 
 // Factory
-class PetViewModelFactory(private val repository: PetRepository) : ViewModelProvider.Factory {
+class PetViewModelFactory(
+    private val petRepository: PetRepository,
+    private val cloudinaryRepository: CloudinaryRepository
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PetViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return PetViewModel(repository) as T
+            return PetViewModel(petRepository, cloudinaryRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

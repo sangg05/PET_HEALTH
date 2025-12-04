@@ -28,6 +28,7 @@ import androidx.navigation.compose.navigation
 import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.data.repository.UserViewModelFactory
+import com.example.pet_health.repository.CloudinaryRepository
 import com.example.pet_health.ui.screen.AccountActionsScreen
 import com.example.pet_health.ui.screen.ChangePasswordScreen
 import com.example.pet_health.ui.screen.EditPetScreen
@@ -57,15 +58,22 @@ fun HealthRecordsNav(navController: NavController) {
     val context = LocalContext.current
     val database = AppDatabase.getDatabase(context)
     val repository = PetRepository(database)
+    val cloudinaryRepo = CloudinaryRepository()
+
 
     // Tạo 1 lần, share cho cả 2 màn hình
-    val petViewModel: PetViewModel = viewModel(factory = PetViewModelFactory(repository))
+    val petViewModel: PetViewModel = viewModel(
+        factory = PetViewModelFactory(
+            petRepository = repository,
+            cloudinaryRepository = cloudinaryRepo
+        )
+    )
     val healthRecordViewModel: HealthRecordViewModel = viewModel()
 
 }
 @Composable
 fun AppScreen() {
-
+    val cloudinaryRepository = CloudinaryRepository()
     val navController = rememberNavController()
     val context = LocalContext.current
     val userRepository = remember { UserRepository(context) }
@@ -77,8 +85,9 @@ fun AppScreen() {
         factory = UserViewModelFactory(auth, userRepository)
     )
 
+    val cloudinaryRepo = CloudinaryRepository()
     val petViewModel: PetViewModel = viewModel(
-        factory = PetViewModelFactory(repository)
+        factory = PetViewModelFactory(petRepository = repository, cloudinaryRepository = cloudinaryRepo)
     )
     val healthTrackingViewModel: HealthTrackingViewModel = viewModel(
         key = "HealthTrackingVM",
@@ -166,16 +175,23 @@ fun AppScreen() {
                 )
             }
             composable("pet_list") { backStackEntry ->
-                val petViewModel: PetViewModel = viewModel(
+                val petVM: PetViewModel = viewModel(
                     backStackEntry,
-                    factory = PetViewModelFactory(repository)
+                    factory = PetViewModelFactory(
+                        petRepository = repository,
+                        cloudinaryRepository = cloudinaryRepo
+                    )
                 )
 
                 LaunchedEffect(Unit) {
-                    petViewModel.fetchPetsFromFirebaseToRoom()
+                    petVM.fetchPetsFromFirebaseToRoom()
                 }
 
-                PetListScreen(navController, petViewModel)
+                PetListScreen(navController, petVM)
+            }
+
+            composable("add_pet") {
+                AddPetScreen(navController = navController, petViewModel = petViewModel)
             }
             composable(
                 route = "edit_pet?editMode={editMode}&petId={petId}&initName={initName}&initType={initType}&initAge={initAge}&initColor={initColor}&initWeight={initWeight}&initHeight={initHeight}&initAdoptionDate={initAdoptionDate}&initImageUri={initImageUri}",
@@ -212,16 +228,22 @@ fun AppScreen() {
                 arguments = listOf(navArgument("petId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val parentEntry = remember(backStackEntry) { navController.getBackStackEntry("pet_list") }
-                val petViewModel: PetViewModel = viewModel(
+                val petVM: PetViewModel = viewModel(
                     parentEntry,
-                    factory = PetViewModelFactory(repository)
+                    factory = PetViewModelFactory(
+                        petRepository = repository,
+                        cloudinaryRepository = cloudinaryRepo
+                    )
                 )
 
                 val petId = backStackEntry.arguments?.getString("petId")
-                val pet = petViewModel.pets.value.find { it.petId == petId }
+                val pet = petVM.pets.value.find { it.petId == petId }
 
                 if (pet != null) {
-                    PetProfileScreen(pet = pet, navController = navController,repository = repository
+                    PetProfileScreen(
+                        pet = pet,
+                        navController = navController,
+                        repository = repository
                     )
                 }
             }

@@ -45,6 +45,7 @@ fun AddPetScreen(
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
     var adoptionDate by remember { mutableStateOf("") }
+
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     val context = LocalContext.current
@@ -114,9 +115,14 @@ fun AddPetScreen(
 
             if (showImagePickerDialog) {
                 PetImagePicker(
-                    onImageSelected = { uriString -> imageUri = Uri.parse(uriString) },
+                    onImageSelected = { uriString ->
+                        imageUri = Uri.parse(uriString)
+                    },
                     onDismiss = { showImagePickerDialog = false },
-                    onGalleryClick = { galleryLauncher.launch("image/*") }
+                    onGalleryClick = {
+                        galleryLauncher.launch("image/*")
+                        showImagePickerDialog = false
+                    }
                 )
             }
 
@@ -174,7 +180,7 @@ fun AddPetScreen(
                             sizeCm = height.toDoubleOrNull(),
                             adoptionDate = adoptionTimestamp,
                             imageUri = imageUri,
-                            existingImageUrl = "",
+                            existingImageUrl = null,
                             editMode = false,
                             petId = null
                         ) {
