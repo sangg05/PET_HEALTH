@@ -157,7 +157,7 @@
 
                             // Navigate với tất cả parameters
                             navController.navigate(
-                                "add_pet?" +
+                                "edit_pet?" +
                                         "editMode=true&" +
                                         "petId=${pet.petId}&" +
                                         "initName=${Uri.encode(pet.name)}&" +

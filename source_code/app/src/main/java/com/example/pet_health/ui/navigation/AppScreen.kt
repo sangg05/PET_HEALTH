@@ -30,6 +30,7 @@ import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.data.repository.UserViewModelFactory
 import com.example.pet_health.ui.screen.AccountActionsScreen
 import com.example.pet_health.ui.screen.ChangePasswordScreen
+import com.example.pet_health.ui.screen.EditPetScreen
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.NotificationScreen
@@ -177,9 +178,10 @@ fun AppScreen() {
                 PetListScreen(navController, petViewModel)
             }
             composable(
-                route = "add_pet?editMode={editMode}&initName={initName}&initType={initType}&initAge={initAge}&initColor={initColor}&initWeight={initWeight}&initHeight={initHeight}&initAdoptionDate={initAdoptionDate}",
+                route = "edit_pet?editMode={editMode}&petId={petId}&initName={initName}&initType={initType}&initAge={initAge}&initColor={initColor}&initWeight={initWeight}&initHeight={initHeight}&initAdoptionDate={initAdoptionDate}&initImageUri={initImageUri}",
                 arguments = listOf(
-                    navArgument("editMode") { type = NavType.BoolType; defaultValue = false },
+                    navArgument("editMode") { type = NavType.BoolType; defaultValue = true },
+                    navArgument("petId") { type = NavType.StringType; defaultValue = "" },
                     navArgument("initName") { type = NavType.StringType; defaultValue = "" },
                     navArgument("initType") { type = NavType.StringType; defaultValue = "" },
                     navArgument("initAge") { type = NavType.StringType; defaultValue = "" },
@@ -187,41 +189,22 @@ fun AppScreen() {
                     navArgument("initWeight") { type = NavType.StringType; defaultValue = "" },
                     navArgument("initHeight") { type = NavType.StringType; defaultValue = "" },
                     navArgument("initAdoptionDate") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("initImageUri") { type = NavType.StringType; defaultValue = "" }
                 )
             ) { backStackEntry ->
-
-                // Lấy ViewModel share với pet_list
-                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry("pet_list") }
-                val petViewModel: PetViewModel = viewModel(
-                    parentEntry,
-                    factory = PetViewModelFactory(repository)
-                )
-
-                // Lấy các argument từ route
-                val editMode = backStackEntry.arguments?.getBoolean("editMode") ?: false
-                val initName = backStackEntry.arguments?.getString("initName") ?: ""
-                val initType = backStackEntry.arguments?.getString("initType") ?: ""
-                val initAge = backStackEntry.arguments?.getString("initAge") ?: ""
-                val initColor = backStackEntry.arguments?.getString("initColor") ?: ""
-                val initWeight = backStackEntry.arguments?.getString("initWeight") ?: ""
-                val initHeight = backStackEntry.arguments?.getString("initHeight") ?: ""
-                val initAdoptionDate = backStackEntry.arguments?.getString("initAdoptionDate") ?: ""
-
-                // Lấy URI ảnh từ ViewModel tạm
-                val initImageUri = petViewModel.tempImageUri?.toString()
-
-                AddPetScreen(
+                EditPetScreen(
                     navController = navController,
                     petViewModel = petViewModel,
-                    editMode = editMode,
-                    initName = initName,
-                    initType = initType,
-                    initAge = initAge,
-                    initColor = initColor,
-                    initWeight = initWeight,
-                    initHeight = initHeight,
-                    initAdoptionDate = initAdoptionDate,
-                    initImageUri = initImageUri
+                    editMode = backStackEntry.arguments?.getBoolean("editMode") ?: true,
+                    petId = backStackEntry.arguments?.getString("petId"),
+                    initName = backStackEntry.arguments?.getString("initName") ?: "",
+                    initType = backStackEntry.arguments?.getString("initType") ?: "",
+                    initAge = backStackEntry.arguments?.getString("initAge") ?: "",
+                    initColor = backStackEntry.arguments?.getString("initColor") ?: "",
+                    initWeight = backStackEntry.arguments?.getString("initWeight") ?: "",
+                    initHeight = backStackEntry.arguments?.getString("initHeight") ?: "",
+                    initAdoptionDate = backStackEntry.arguments?.getString("initAdoptionDate") ?: "",
+                    initImageUri = backStackEntry.arguments?.getString("initImageUri")
                 )
             }
             composable(
