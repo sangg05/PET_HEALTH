@@ -27,18 +27,26 @@ import com.example.pet_health.ui.screens.*
 import androidx.navigation.compose.navigation
 import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.data.repository.UserRepository
+import com.example.pet_health.data.repository.UserViewModelFactory
+import com.example.pet_health.ui.screen.AccountActionsScreen
+import com.example.pet_health.ui.screen.ChangePasswordScreen
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.NotificationScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
+import com.example.pet_health.ui.screen.UpdateInfoScreen
 import com.example.pet_health.ui.viewmodel.HealthRecordViewModel
 import com.example.pet_health.ui.viewmodel.HealthRecordViewModelFactory
 import com.example.pet_health.ui.viewmodel.HealthTrackingViewModel
 import com.example.pet_health.ui.viewmodel.HealthTrackingViewModelFactory
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
+import com.example.pet_health.ui.viewmodel.UserViewModel
+import com.example.pet_health.ui.viewmodel.YourViewModel
+import com.example.pet_health.ui.viewmodel.YourViewModelFactory
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 import pet_health.data.local.AppDatabase
@@ -54,7 +62,6 @@ fun HealthRecordsNav(navController: NavController) {
     val healthRecordViewModel: HealthRecordViewModel = viewModel()
 
 }
-
 @Composable
 fun AppScreen() {
 
@@ -64,6 +71,10 @@ fun AppScreen() {
     val scope = rememberCoroutineScope()
     val database = AppDatabase.getDatabase(context)
     val repository = PetRepository(database)
+    val auth = FirebaseAuth.getInstance()
+    val userViewModel: UserViewModel = viewModel(
+        factory = UserViewModelFactory(auth, userRepository)
+    )
 
     val petViewModel: PetViewModel = viewModel(
         factory = PetViewModelFactory(repository)
@@ -156,8 +167,9 @@ fun AppScreen() {
             composable("account") {
                 AccountManagementScreen(
                     navController = navController,
-                    userRepository = userRepository,
-                    onBack = { navController.popBackStack() }
+                    userViewModel = userViewModel,
+                    onBack = { navController.popBackStack() },
+                    userRepository = userRepository
                 )
             }
             composable("pet_list") { backStackEntry ->
@@ -265,6 +277,7 @@ fun AppScreen() {
                 AddHealthRecordScreen(navController, petViewModel, healthRecordViewModel, petId)
             }
 
+
             composable("reminder") { ReminderScreen(navController) }
             composable("reminder_form") { ReminderFormScreen(navController) }
 
@@ -285,6 +298,32 @@ fun AppScreen() {
                 WeightHeightScreen(
                     navController = navController, // thêm dòng này
                     petId = petId
+                )
+            }
+            composable("account_actions") { backStackEntry ->
+                val auth = FirebaseAuth.getInstance()
+                val viewModel: YourViewModel = viewModel(factory = YourViewModelFactory(auth))
+
+                AccountActionsScreen(
+                    navController = navController,
+                    viewModel = viewModel,
+                    onUpdateInfo = {navController.navigate("update_info") },
+                    onUpdateAvatar = {},
+                    onChangePassword = { navController.navigate("change_password")}
+                )
+            }
+            composable("update_info") {
+                UpdateInfoScreen(
+                    navController = navController,
+                    userViewModel = userViewModel,
+                    onSave = { /* hành động sau khi lưu */ }
+                )}
+            composable("change_password") {
+                ChangePasswordScreen(
+                    onBack = { navController.popBackStack() },
+                    onPasswordChanged = {
+                        // hành động sau khi đổi mật khẩu
+                    }
                 )
             }
             composable("medical_records") { TiemThuocListScreen(navController) }

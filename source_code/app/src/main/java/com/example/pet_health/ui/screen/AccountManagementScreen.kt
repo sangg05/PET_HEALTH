@@ -49,12 +49,14 @@ import com.example.pet_health.R
 import androidx.navigation.NavController
 import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.ui.screen.lightPink
+import com.example.pet_health.ui.viewmodel.UserViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountManagementScreen(
     navController: NavController,
+    userViewModel: UserViewModel,
     onBack: () -> Unit = {},
     onNavigateMore: () -> Unit = {},
     userRepository: UserRepository,
@@ -76,7 +78,9 @@ fun AccountManagementScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateMore) {
+                    IconButton(onClick = {
+                        navController.navigate("account_actions")
+                    }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_more),
                             contentDescription = "More",
@@ -177,7 +181,6 @@ fun AccountManagementScreen(
                     Spacer(Modifier.height(12.dp))
                     Text("Tên: ${user?.name ?: "Chưa có"}")
                     Text("Tài khoản: ${user?.email ?: "Chưa có"}")
-                    Text("Điện thoại: ${user?.phone ?: "Chưa có"}")
                     Spacer(Modifier.height(4.dp))
                     Text("Giới tính: ${user?.gender ?: "Chưa cập nhật"}")
                     Spacer(Modifier.height(4.dp))

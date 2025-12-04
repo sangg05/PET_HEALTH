@@ -3,9 +3,12 @@ package com.example.pet_health.data.repository
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.entity.SymptomLogEntity
 import com.example.pet_health.data.entity.UserEntity
+import com.example.pet_health.ui.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
@@ -132,6 +135,53 @@ class UserRepository(private val context: Context) {
         pets.forEach { pet ->
             repository.syncSymptomsFromFirebase(pet.petId)
         }
+    }
+    suspend fun updateUserInfo(name: String, birthDate: String?, gender: String?, phone: String?) {
+        val user = currentUser.value ?: return
+        val updatedUser = user.copy(name = name, birthDate = birthDate, gender = gender)
+
+        // Cập nhật Room
+        userDao.insertUser(updatedUser) // insert với REPLACE
+
+        // Cập nhật Firestore
+        firestore.collection("users")
+            .document(user.userId)
+            .set(updatedUser)
+            .await()
+
+        // Cập nhật state
+        currentUser.value = updatedUser
+    }
+    suspend fun getUserById(userId: String): UserEntity? {
+        return try {
+            // Thử lấy từ Room trước
+            var user = userDao.getUser(userId)
+            if (user == null) {
+                // Nếu Room chưa có → lấy từ Firestore
+                val snapshot = firestore.collection("users").document(userId).get().await()
+                user = snapshot.toObject(UserEntity::class.java)
+                // Lưu vào Room để lần sau không phải fetch nữa
+                user?.let { userDao.insertUser(it) }
+            }
+            user
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+}
+
+
+class UserViewModelFactory(
+    private val auth: FirebaseAuth,
+    private val userRepository: UserRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(UserViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return UserViewModel(auth, userRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 

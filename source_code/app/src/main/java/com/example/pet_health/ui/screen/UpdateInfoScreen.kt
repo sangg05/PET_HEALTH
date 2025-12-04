@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import android.R.attr.background
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,39 +14,68 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.pet_health.R
+import com.example.pet_health.data.repository.UserRepository
+import com.example.pet_health.ui.viewmodel.UserViewModel
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateInfoScreen(
-    onBack: () -> Unit = {},
+    navController: NavController,
+    userViewModel: UserViewModel,
     onSave: () -> Unit = {}
 ) {
-    val background = Color(0xFFF3CCE4)
 
-    var name by remember { mutableStateOf("Lê Thị B") }
+    val user by userViewModel.userInfo
+
+    var name by remember { mutableStateOf("") }
     var birthday by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("Nữ") }
+    var gender by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+
+
+// Khi user info load xong, cập nhật state
+    LaunchedEffect(userViewModel.userInfo.value) {
+        val user = userViewModel.userInfo.value
+        if (user != null) {
+            name = user.name ?: ""
+            birthday = user.birthDate ?: ""
+            gender = user.gender ?: "Nữ"
+            phone = user.phone
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cập nhật thông tin", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "Cập nhật thông tin",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.Black
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFE5A8C8)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF3CCE4))
             )
         },
-        containerColor = background
     ) { padding ->
 
         Column(
@@ -84,53 +114,50 @@ fun UpdateInfoScreen(
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
-
-
                     // ======== KHUNG NGÀY SINH =========
                     Text("Ngày sinh", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                     Spacer(modifier = Modifier.height(6.dp))
+                    var birthday by remember { mutableStateOf(user?.birthDate ?: "") }
 
                     OutlinedTextField(
                         value = birthday,
-                        onValueChange = onValueChange@{ input ->
-                            // Lấy số
+                        onValueChange = { input ->
+                            // Chỉ lấy số
                             var digits = input.filter { it.isDigit() }
-
-                            // Giới hạn 8 số (ddMMyyyy)
                             if (digits.length > 8) digits = digits.take(8)
 
-                            // Chưa đủ 8 số → chỉ hiển thị số người dùng nhập
-                            if (digits.length < 8) {
-                                birthday = digits
-                                return@onValueChange
+                            // Tách từng phần, không thêm số 0
+                            val dayPart = digits.take(2)
+                            val monthPart = digits.drop(2).take(2)
+                            val yearPart = digits.drop(4).take(4)
+
+                            // Build format
+                            val formatted = buildString {
+                                if (dayPart.isNotEmpty()) append(dayPart)
+                                if (monthPart.isNotEmpty()) append("/$monthPart")
+                                if (yearPart.isNotEmpty()) append("/$yearPart")
                             }
 
-                            // Đủ 8 số → format
-                            val day = digits.substring(0, 2).toIntOrNull() ?: 0
-                            val month = digits.substring(2, 4).toIntOrNull() ?: 0
-                            val year = digits.substring(4, 8).toIntOrNull() ?: 0
+                            // Kiểm tra hợp lệ nếu đủ 8 số
+                            var warning = ""
+                            if (digits.length == 8) {
+                                val day = dayPart.toIntOrNull() ?: 0
+                                val month = monthPart.toIntOrNull() ?: 0
+                                val year = yearPart.toIntOrNull() ?: 0
 
-                            // Kiểm tra tháng
-                            val validMonth = month in 1..12
+                                val validMonth = month in 1..12
+                                val validDay = when (month) {
+                                    1,3,5,7,8,10,12 -> day in 1..31
+                                    4,6,9,11 -> day in 1..30
+                                    2 -> day in 1..29
+                                    else -> false
+                                }
+                                val validYear = year in 1900..2025
 
-                            // Kiểm tra ngày theo tháng
-                            val validDay = when (month) {
-                                1,3,5,7,8,10,12 -> day in 1..31
-                                4,6,9,11 -> day in 1..30
-                                2 -> day in 1..29
-                                else -> false
+                                if (!validDay || !validMonth || !validYear) warning = " ⚠"
                             }
 
-                            // Kiểm tra năm
-                            val validYear = year in 1900..2025
-
-                            val formatted = "${digits.substring(0,2)}/${digits.substring(2,4)}/${digits.substring(4,8)}"
-
-                            birthday = if (validDay && validMonth && validYear) {
-                                formatted
-                            } else {
-                                "$formatted ⚠"
-                            }
+                            birthday = formatted + warning
                         },
                         label = { Text("dd/mm/yyyy") },
                         trailingIcon = {
@@ -221,24 +248,30 @@ fun UpdateInfoScreen(
             Spacer(Modifier.height(30.dp))
 
             // ====== BUTTON LƯU ======
+            val scope = rememberCoroutineScope()
+
             Box(
                 modifier = Modifier
                     .width(170.dp)
                     .height(50.dp)
                     .background(Color(0xFFE5A8C8), RoundedCornerShape(25.dp))
-                    .clickable { onSave() },
+                    .clickable {
+                        scope.launch {
+                            userViewModel.updateUserInfo(
+                                name = name,
+                                birthDate = birthday,
+                                gender = gender,
+                                phone=phone,
+                            )
+                            onSave()
+                            navController.popBackStack()
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_save),
-                        contentDescription = "Save",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("LƯU", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
+                Text("LƯU", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }
 }
+

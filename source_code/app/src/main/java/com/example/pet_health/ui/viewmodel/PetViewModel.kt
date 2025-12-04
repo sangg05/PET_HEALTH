@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.repository.PetRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
@@ -80,46 +81,6 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
             _isLoading.value = false
         }
     }
-
-    // Thêm pet: Room + Firebase
-//    fun addPet(
-//        pet: PetEntity,
-//        context: Context,
-//        imageUri: Uri?,
-//        onDone: () -> Unit = {}
-//    ) {
-//        viewModelScope.launch {
-//            _isLoading.value = true
-//
-//            // 1. Upload ảnh nếu có
-//            val petWithImage = if (imageUri != null) {
-//                val storageRef = FirebaseStorage.getInstance().reference.child("pets/${pet.petId}.jpg")
-//                val downloadUrl = storageRef.putFile(imageUri)
-//                    .continueWithTask { task ->
-//                        if (!task.isSuccessful) throw task.exception!!
-//                        storageRef.downloadUrl
-//                    }.await()
-//
-//                pet.copy(imageUrl = downloadUrl.toString())
-//            } else {
-//                pet
-//            }
-//
-//            // 2. Lưu Room
-//            repository.insertPet(petWithImage)
-//
-//            // 3. Lưu Firestore
-//            uploadPetToFirebase(petWithImage)
-//
-//            // 4. Cập nhật state để UI refresh ngay
-//            _pets.value = _pets.value + petWithImage
-//
-//            _isLoading.value = false
-//
-//            // 5. Callback (ví dụ navController.popBackStack())
-//            onDone()
-//        }
-//    }
 
     fun addOrUpdatePet(
         context: Context,
@@ -423,4 +384,24 @@ class PetViewModelFactory(private val repository: PetRepository) : ViewModelProv
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+class YourViewModel(private val auth: FirebaseAuth) : ViewModel() {
+    val currentUser = mutableStateOf<FirebaseUser?>(auth.currentUser)
+
+    // Logout
+    fun logoutOnly() {
+        auth.signOut()
+        currentUser.value = null
+
+    }
+}
+class YourViewModelFactory(private val auth: FirebaseAuth) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(YourViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return YourViewModel(auth) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
 
