@@ -12,32 +12,33 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-//import com.example.pet_health.repository.PetRepository
-//import com.example.pet_health.ui.screen.HealthTrackingScreen
-import com.example.pet_health.ui.screen.ReminderFormScreen
-import com.example.pet_health.ui.screen.ReminderScreen
-import com.example.pet_health.ui.screen.ReminderDetailScreen
-import com.example.pet_health.ui.screen.TiemThuocListScreen
-import com.example.pet_health.ui.screen.WeightHeightScreen
-import com.example.pet_health.ui.screen.AddRecordScreen
-import com.example.pet_health.ui.screen.LoginScreen
-import com.example.pet_health.ui.screens.*
-//import com.example.pet_health.ui.viewmodel.PetViewModel
-//import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import androidx.navigation.compose.navigation
 import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.data.repository.UserRepository
+import com.example.pet_health.ui.screen.AccountActionsScreen
+//import com.example.pet_health.ui.screen.AccountManagementScreen
+import com.example.pet_health.ui.screen.AddRecordScreen
+import com.example.pet_health.ui.screen.ChangePasswordScreen
+import com.example.pet_health.ui.screen.ChooseAvatarScreen
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
+import com.example.pet_health.ui.screen.LoginScreen
 import com.example.pet_health.ui.screen.NotificationScreen
 import com.example.pet_health.ui.screen.RegisterScreen
+import com.example.pet_health.ui.screen.ReminderDetailScreen
+import com.example.pet_health.ui.screen.ReminderFormScreen
+import com.example.pet_health.ui.screen.ReminderScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
+import com.example.pet_health.ui.screen.TiemThuocListScreen
+import com.example.pet_health.ui.screen.UpdateInfoScreen
+import com.example.pet_health.ui.screen.WeightHeightScreen
+import com.example.pet_health.ui.screen.RecordDetailScreen // Đã import màn hình chi tiết
+import com.example.pet_health.ui.screens.*
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import com.example.pet_health.ui.viewmodel.ReminderViewModel
 import com.example.pet_health.ui.viewmodel.ReminderViewModelFactory
 import kotlinx.coroutines.launch
 import pet_health.data.local.AppDatabase
-
 
 @Composable
 fun AppScreen() {
@@ -63,7 +64,7 @@ fun AppScreen() {
 
             composable("login") {
                 LoginScreen(
-                    navController = navController,
+                    navController = navController, // <--- ĐÃ THÊM LẠI DÒNG NÀY
                     userRepository = userRepository,
                     onLoginClick = { email, pass ->
                         scope.launch {
@@ -83,11 +84,12 @@ fun AppScreen() {
             }
             composable("register") {
                 RegisterScreen(
+                    // Nếu RegisterScreen cũng báo lỗi tương tự, hãy bỏ comment dòng dưới:
+                    // navController = navController,
                     userRepository = userRepository,
                     onNavigateLogin = {
-                        // Điều hướng khi người dùng click "Đã có tài khoản? Đăng nhập"
                         navController.navigate("login") {
-                            popUpTo("register") { inclusive = true } // xóa register khỏi back stack
+                            popUpTo("register") { inclusive = true }
                         }
                     },
                     onRegisterSuccess = {
@@ -100,7 +102,6 @@ fun AppScreen() {
             composable("forgot") {
                 ForgotPasswordScreen(
                     onSendClick = { email ->
-                        // TODO: gửi OTP
                         navController.navigate("reset_password/$email")
                     },
                     onNavigateLogin = { navController.popBackStack() }
@@ -112,9 +113,7 @@ fun AppScreen() {
                     navArgument("email") { type = NavType.StringType }
                 )
             ) { backStack ->
-
                 val email = backStack.arguments?.getString("email") ?: ""
-
                 ResetPasswordScreen(
                     email = email,
                     onResetSuccess = {
@@ -124,24 +123,14 @@ fun AppScreen() {
                     }
                 )
             }
-//            composable("main") {
-//                HomeScreen(navController)
-//            }
-
 
             composable("home") {
                 HomeScreen(
                     navController = navController,
-                    userRepository = userRepository // truyền vào đây
+                    userRepository = userRepository
                 )
             }
-            composable("account") {
-                AccountManagementScreen(
-                    navController = navController,
-                    userRepository = userRepository,
-                    onBack = { navController.popBackStack() }
-                )
-            }
+
             composable("pet_list") { backStackEntry ->
                 val petViewModel: PetViewModel = viewModel(
                     backStackEntry,
@@ -152,8 +141,12 @@ fun AppScreen() {
                     petViewModel.fetchPetsFromFirebaseToRoom()
                 }
 
-                PetListScreen(navController, petViewModel)
+                PetListScreen(
+                    navController = navController,
+                    petViewModel = petViewModel
+                )
             }
+
             composable(
                 route = "add_pet?editMode={editMode}&initName={initName}&initType={initType}&initAge={initAge}&initColor={initColor}&initWeight={initWeight}&initHeight={initHeight}&initAdoptionDate={initAdoptionDate}",
                 arguments = listOf(
@@ -168,14 +161,12 @@ fun AppScreen() {
                 )
             ) { backStackEntry ->
 
-                // Lấy ViewModel share với pet_list
                 val parentEntry = remember(backStackEntry) { navController.getBackStackEntry("pet_list") }
                 val petViewModel: PetViewModel = viewModel(
                     parentEntry,
                     factory = PetViewModelFactory(repository)
                 )
 
-                // Lấy các argument từ route
                 val editMode = backStackEntry.arguments?.getBoolean("editMode") ?: false
                 val initName = backStackEntry.arguments?.getString("initName") ?: ""
                 val initType = backStackEntry.arguments?.getString("initType") ?: ""
@@ -184,8 +175,6 @@ fun AppScreen() {
                 val initWeight = backStackEntry.arguments?.getString("initWeight") ?: ""
                 val initHeight = backStackEntry.arguments?.getString("initHeight") ?: ""
                 val initAdoptionDate = backStackEntry.arguments?.getString("initAdoptionDate") ?: ""
-
-                // Lấy URI ảnh từ ViewModel tạm
                 val initImageUri = petViewModel.tempImageUri?.toString()
 
                 AddPetScreen(
@@ -202,6 +191,7 @@ fun AppScreen() {
                     initImageUri = initImageUri
                 )
             }
+
             composable(
                 route = "pet_profile?petId={petId}",
                 arguments = listOf(navArgument("petId") { type = NavType.StringType })
@@ -216,26 +206,28 @@ fun AppScreen() {
                 val pet = petViewModel.pets.value.find { it.petId == petId }
 
                 if (pet != null) {
-                    PetProfileScreen(pet = pet, navController = navController,repository = repository
+                    PetProfileScreen(
+                        pet = pet,
+                        navController = navController,
+                        repository = repository
                     )
                 }
             }
+
             composable("health_records") { HealthRecordScreen(navController) }
             composable("add_health_record") { AddHealthRecordScreen(navController) }
 
-            // ===== PHẦN NHẮC LỊCH (ĐÃ CẬP NHẬT CHO PHÉP SỬA) =====
-            // 1. Màn hình danh sách
+            // ===== PHẦN NHẮC LỊCH =====
             composable("reminder") {
                 ReminderScreen(navController = navController, viewModel = reminderViewModel)
             }
 
-            // 2. Màn hình tạo mới HOẶC Chỉnh sửa (Thêm tham số reminderId)
             composable(
                 route = "reminder_form?reminderId={reminderId}",
                 arguments = listOf(
                     navArgument("reminderId") {
                         type = NavType.StringType
-                        nullable = true // Cho phép null (trường hợp tạo mới)
+                        nullable = true
                         defaultValue = null
                     }
                 )
@@ -244,11 +236,10 @@ fun AppScreen() {
                 ReminderFormScreen(
                     navController = navController,
                     viewModel = reminderViewModel,
-                    reminderId = reminderId // Truyền ID vào form
+                    reminderId = reminderId
                 )
             }
 
-            // 3. Màn hình chi tiết
             composable(
                 route = "reminder_detail/{reminderId}",
                 arguments = listOf(navArgument("reminderId") { type = NavType.StringType })
@@ -260,31 +251,95 @@ fun AppScreen() {
                     viewModel = reminderViewModel
                 )
             }
-            // ==========================================
+            // ==========================
 
-//            composable("health_dashboard") {
-//                val context = LocalContext.current
-//                val db = AppDatabase.getDatabase(context) // gọi database
-//                val dao = db.petDao() // lấy PetDao
-//                val repository = PetRepository(dao)
-//                val petViewModel: PetViewModel = viewModel(
-//                    factory = PetViewModelFactory(repository)
-//                )
-//                HealthTrackingScreen(petViewModel, navController)
-//            }
             composable(
                 "weight_height/{petId}",
                 arguments = listOf(navArgument("petId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val petId = backStackEntry.arguments?.getString("petId")
                 WeightHeightScreen(
-                    navController = navController, // thêm dòng này
+                    navController = navController,
                     petId = petId
                 )
             }
+
             composable("medical_records") { TiemThuocListScreen(navController) }
-            composable("add_record") { AddRecordScreen(navController) }
-            composable("note") { NotificationScreen(navController) }
+
+            // ===== PHẦN SỔ TIÊM CHỦNG =====
+            composable("add_record") {
+                AddRecordScreen(
+                    navController = navController,
+                    petId = "" // Truyền tham số petId
+                )
+            }
+
+            composable(
+                route = "record_detail/{vaccineId}",
+                arguments = listOf(navArgument("vaccineId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val vaccineId = backStackEntry.arguments?.getString("vaccineId") ?: ""
+                RecordDetailScreen(
+                    navController = navController,
+                    vaccineId = vaccineId
+                )
+            }
+            // ==============================
+
+            composable("notification") { NotificationScreen(navController) }
+
+            composable("account") {
+                AccountManagementScreen(
+                    navController = navController,
+                    userRepository = userRepository,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("account_actions") {
+                AccountActionsScreen(
+                    onBack = { navController.popBackStack() },
+                    onUpdateInfo = {
+                        navController.navigate("update_info")
+                    },
+                    onUpdateAvatar = { navController.navigate("choose_avatar") },
+                    onChangePassword = {
+                        navController.navigate("change_password")
+                    },
+                    onLogout = {
+                        navController.navigate("login") {
+                            popUpTo("account") { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable("change_password") {
+                ChangePasswordScreen(
+                    onBack = { navController.popBackStack() },
+                    onPasswordChanged = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable("update_info") {
+                UpdateInfoScreen(
+                    onBack = { navController.popBackStack() },
+                    onSave = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable("choose_avatar") {
+                ChooseAvatarScreen(
+                    onBack = { navController.popBackStack() },
+                    onSelect = { uri ->
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     }
 }
