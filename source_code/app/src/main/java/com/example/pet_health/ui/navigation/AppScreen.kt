@@ -2,6 +2,7 @@ package com.example.pet_health.ui.navigation
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
@@ -136,6 +137,11 @@ fun AppScreen() {
                     backStackEntry,
                     factory = PetViewModelFactory(repository)
                 )
+
+                LaunchedEffect(Unit) {
+                    petViewModel.fetchPetsFromFirebaseToRoom()
+                }
+
                 PetListScreen(navController, petViewModel)
             }
             composable(

@@ -2,6 +2,7 @@ package com.example.pet_health.ui.viewmodel
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -39,7 +40,12 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
     private fun fetchPets() {
         viewModelScope.launch {
             _isLoading.value = true
-            _pets.value = repository.getAllPets()
+            val userId = auth.currentUser?.uid
+            _pets.value = if (userId != null) {
+                repository.getPetsByUserId(userId)
+            } else {
+                emptyList()
+            }
             _isLoading.value = false
         }
     }
@@ -252,33 +258,49 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
     // Fetch pets từ Firebase về Room (optional)
     fun fetchPetsFromFirebaseToRoom() {
         val userId = auth.currentUser?.uid ?: return
-        db.collection("users")
-            .document(userId)
-            .collection("pets")
-            .get()
-            .addOnSuccessListener { result ->
-                viewModelScope.launch {
-                    val petsFromFirebase = result.map { doc ->
-                        PetEntity(
-                            petId = doc.getString("petId") ?: "",
-                            userId = doc.getString("userId") ?: "",
-                            name = doc.getString("name") ?: "",
-                            species = doc.getString("species") ?: "",
-                            breed = doc.getString("breed") ?: "",
-                            color = doc.getString("color"),
-                            imageUrl = doc.getString("imageUrl"),
-                            birthDate = doc.getLong("birthDate") ?: 0L,
-                            weightKg = doc.getDouble("weightKg")?.toFloat() ?: 0f,
-                            sizeCm = doc.getDouble("sizeCm")?.toFloat(),
-                            healthStatus = doc.getString("healthStatus") ?: "",
-                            adoptionDate = doc.getLong("adoptionDate")
-                        )
-                    }
-                    petsFromFirebase.forEach { repository.insertPet(it) }
-                    _pets.value = repository.getAllPets()
+
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+
+                val result = db.collection("users")
+                    .document(userId)
+                    .collection("pets")
+                    .get()
+                    .await()
+
+                val petsFromFirebase = result.documents.mapNotNull { doc ->
+                    PetEntity(
+                        petId = doc.getString("petId") ?: return@mapNotNull null,
+                        userId = doc.getString("userId") ?: userId, // ✅ Đảm bảo userId đúng
+                        name = doc.getString("name") ?: "",
+                        species = doc.getString("species") ?: "",
+                        breed = doc.getString("breed") ?: "",
+                        color = doc.getString("color"),
+                        imageUrl = doc.getString("imageUrl"),
+                        birthDate = doc.getLong("birthDate") ?: 0L,
+                        weightKg = doc.getDouble("weightKg")?.toFloat() ?: 0f,
+                        sizeCm = doc.getDouble("sizeCm")?.toFloat(),
+                        healthStatus = doc.getString("healthStatus") ?: "",
+                        adoptionDate = doc.getLong("adoptionDate")
+                    )
                 }
+
+                // Lưu vào Room
+                petsFromFirebase.forEach { repository.insertPet(it) }
+
+                // Cập nhật state - chỉ lấy pets của user này
+                _pets.value = repository.getPetsByUserId(userId)
+
+                Log.d("PetViewModel", "Loaded ${petsFromFirebase.size} pets for user $userId")
+            } catch (e: Exception) {
+                Log.e("PetViewModel", "Error loading pets from Firebase", e)
+            } finally {
+                _isLoading.value = false
             }
+        }
     }
+
     fun uploadImageToStorage(context: Context, imageUri: Uri, onComplete: (String?) -> Unit) {
         val storageRef = FirebaseStorage.getInstance().reference
         val fileName = "pet_images/${System.currentTimeMillis()}.jpg"
@@ -305,6 +327,29 @@ class PetViewModel(private val repository: PetRepository) : ViewModel() {
                 }
         } catch (e: Exception) {
             onComplete(null)
+        }
+    }
+    fun deletePet(pet: PetEntity, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            try {
+                // 1. Xóa khỏi Room
+                repository.deletePet(pet)
+
+                // 2. Xóa khỏi Firebase
+                repository.deletePetFromFirestore(pet.petId)
+
+                // 3. Cập nhật state để UI refresh ngay
+                _pets.value = _pets.value.filter { it.petId != pet.petId }
+
+                Log.d("PetViewModel", "Deleted pet: ${pet.name}")
+            } catch (e: Exception) {
+                Log.e("PetViewModel", "Error deleting pet", e)
+            } finally {
+                _isLoading.value = false
+                onComplete()
+            }
         }
     }
 

@@ -60,24 +60,87 @@ class UserRepository(private val context: Context) {
             val snapshot = firestore.collection("users").document(uid).get().await()
             val user = snapshot.toObject(UserEntity::class.java)
             user?.let {
-                withContext(Dispatchers.IO) { userDao.insertUser(it) }
-                currentUser.value = it // cập nhật state
+                withContext(Dispatchers.IO) {
+                    // ✅ Xóa dữ liệu user cũ trước
+                    database.clearAllTables()
+
+                    // Lưu user mới
+                    userDao.insertUser(it)
+
+                    // Sync pets của user mới
+                    syncPetsFromFirebase(uid)
+                }
+                currentUser.value = it
             }
             Pair(true, "Đăng nhập thành công")
         } catch (e: Exception) {
             Pair(false, e.message ?: "Lỗi đăng nhập")
         }
     }
+    private suspend fun syncPetsFromFirebase(userId: String) {
+        try {
+            val petsSnapshot = firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .get()
+                .await()
+
+            val pets = petsSnapshot.documents.mapNotNull { doc ->
+                PetEntity(
+                    petId = doc.getString("petId") ?: return@mapNotNull null,
+                    userId = userId, // ✅ Đảm bảo userId là của user hiện tại
+                    name = doc.getString("name") ?: "",
+                    species = doc.getString("species") ?: "",
+                    breed = doc.getString("breed") ?: "",
+                    color = doc.getString("color"),
+                    imageUrl = doc.getString("imageUrl"),
+                    birthDate = doc.getLong("birthDate") ?: 0L,
+                    weightKg = doc.getDouble("weightKg")?.toFloat() ?: 0f,
+                    sizeCm = doc.getDouble("sizeCm")?.toFloat(),
+                    healthStatus = doc.getString("healthStatus") ?: "",
+                    adoptionDate = doc.getLong("adoptionDate")
+                )
+            }
+
+            pets.forEach { pet ->
+                repository.insertPet(pet)
+            }
+
+            Log.d("UserRepository", "Synced ${pets.size} pets for user $userId")
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error syncing pets", e)
+        }
+    }
+
+
+    // ✅ THÊM: Hàm đăng xuất
+    suspend fun logoutUser() {
+        auth.signOut()
+        currentUser.value = null
+        withContext(Dispatchers.IO) {
+            database.clearAllTables()
+        }
+    }
 }
 
 class PetRepository (private val db: AppDatabase) {
     private val firestore = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
-
-    suspend fun getPets(): List<PetEntity> {
+    // ✅ Sửa: Lấy pets theo userId
+    suspend fun getPetsFromFirebase(): List<PetEntity> {
         return try {
-            val snapshot = firestore.collection("pets").get().await()
-            snapshot.documents.map { doc ->
+            val userId = auth.currentUser?.uid ?: return emptyList()
+
+            val snapshot = firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
                 val birthDate = doc.getLong("birthDate") ?: 0L
                 PetEntity(
                     petId = doc.id,
@@ -86,7 +149,7 @@ class PetRepository (private val db: AppDatabase) {
                     species = doc.getString("species") ?: "Tất cả",
                     breed = doc.getString("breed") ?: "",
                     color = doc.getString("color"),
-                    imageUrl = doc.getString("avatarUrl"),
+                    imageUrl = doc.getString("imageUrl"),
                     birthDate = birthDate,
                     weightKg = (doc.getDouble("weightKg") ?: 0.0).toFloat(),
                     sizeCm = (doc.getDouble("sizeCm") ?: 0.0).toFloat(),
@@ -95,6 +158,7 @@ class PetRepository (private val db: AppDatabase) {
                 )
             }
         } catch (e: Exception) {
+            Log.e("PetRepository", "Error getting pets from Firebase", e)
             emptyList()
         }
     }
@@ -103,12 +167,15 @@ class PetRepository (private val db: AppDatabase) {
         return db.petDao().getAllPets()
     }
 
-    // Thêm pet vào Room
+    // ✅ Thêm: Lấy pets của user hiện tại từ Room
+    suspend fun getPetsByUserId(userId: String): List<PetEntity> {
+        return db.petDao().getPetsByUserId(userId)
+    }
+
     suspend fun insertPet(pet: PetEntity) {
         db.petDao().insertPet(pet)
     }
 
-    //Update
     suspend fun updatePet(pet: PetEntity) {
         db.petDao().updatePet(pet)
     }
@@ -117,9 +184,17 @@ class PetRepository (private val db: AppDatabase) {
         return db.petDao().getPetById(petId)
     }
 
+    // ✅ Sửa: Lấy pet từ Firestore theo userId
     suspend fun getPetByIdFromFirestore(petId: String): PetEntity? {
         return try {
-            val doc = firestore.collection("pets").document(petId).get().await()
+            val userId = auth.currentUser?.uid ?: return null
+            val doc = firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .document(petId)
+                .get()
+                .await()
             doc.toObject(PetEntity::class.java)
         } catch (e: Exception) {
             null
@@ -132,11 +207,16 @@ class PetRepository (private val db: AppDatabase) {
 
     suspend fun deletePetFromFirestore(petId: String) {
         try {
-            firestore.collection("pets").document(petId).delete().await()
+            val userId = auth.currentUser?.uid ?: return
+            firestore
+                .collection("users")
+                .document(userId)
+                .collection("pets")
+                .document(petId)
+                .delete()
+                .await()
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
     }
 }
-

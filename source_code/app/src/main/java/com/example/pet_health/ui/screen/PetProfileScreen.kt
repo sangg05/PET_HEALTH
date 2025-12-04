@@ -174,7 +174,7 @@
                         }
 
                             IconButton(onClick = {
-                                // petViewModel.deletePet(pet)
+                                 petViewModel.deletePet(pet)
                                 navController.popBackStack()
                             }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)

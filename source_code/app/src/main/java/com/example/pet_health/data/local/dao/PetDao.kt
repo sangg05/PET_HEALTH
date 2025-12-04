@@ -12,7 +12,7 @@ interface PetDao {
     suspend fun insertPet(petEntity: PetEntity)
 
     @Query("SELECT * FROM pets WHERE userId = :userId")
-    suspend fun getPetsByUser(userId: String): List<PetEntity>
+    suspend fun getPetsByUserId(userId: String): List<PetEntity>
 
     @Query("SELECT * FROM pets WHERE petId = :id")
     suspend fun getPet(id: String): PetEntity?
@@ -28,4 +28,7 @@ interface PetDao {
 
     @Query("SELECT * FROM pets WHERE petId = :petId LIMIT 1")
     suspend fun getPetById(petId: String): PetEntity?
+
+    @Query("DELETE FROM pets WHERE userId = :userId")
+    suspend fun deleteAllPetsByUserId(userId: String)
 }

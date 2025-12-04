@@ -44,7 +44,9 @@ import java.text.Normalizer
 fun PetListScreen(navController: NavController, petViewModel: PetViewModel) {
     val context = LocalContext.current
 
-
+    LaunchedEffect(Unit) {
+        petViewModel.fetchPetsFromFirebaseToRoom()
+    }
     // State từ ViewModel
     val pets by petViewModel.pets
     val isLoading by petViewModel.isLoading
