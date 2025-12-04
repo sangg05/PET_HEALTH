@@ -16,7 +16,6 @@ import androidx.navigation.navArgument
 //import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.ReminderFormScreen
 import com.example.pet_health.ui.screen.ReminderScreen
-// Thêm import cho màn hình chi tiết nhắc lịch
 import com.example.pet_health.ui.screen.ReminderDetailScreen
 import com.example.pet_health.ui.screen.TiemThuocListScreen
 import com.example.pet_health.ui.screen.WeightHeightScreen
@@ -34,7 +33,6 @@ import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
-// Thêm import cho ReminderViewModel
 import com.example.pet_health.ui.viewmodel.ReminderViewModel
 import com.example.pet_health.ui.viewmodel.ReminderViewModelFactory
 import kotlinx.coroutines.launch
@@ -52,7 +50,6 @@ fun AppScreen() {
     val repository = PetRepository(database)
 
     // ===== KHỞI TẠO REMINDER VIEWMODEL =====
-    // Tạo ViewModel ở đây để dùng chung cho cả 3 màn hình (List, Form, Detail)
     val reminderViewModel: ReminderViewModel = viewModel(
         factory = ReminderViewModelFactory()
     )
@@ -226,16 +223,32 @@ fun AppScreen() {
             composable("health_records") { HealthRecordScreen(navController) }
             composable("add_health_record") { AddHealthRecordScreen(navController) }
 
-            // ===== PHẦN NHẮC LỊCH (ĐÃ CẬP NHẬT) =====
+            // ===== PHẦN NHẮC LỊCH (ĐÃ CẬP NHẬT CHO PHÉP SỬA) =====
             // 1. Màn hình danh sách
             composable("reminder") {
                 ReminderScreen(navController = navController, viewModel = reminderViewModel)
             }
-            // 2. Màn hình tạo mới
-            composable("reminder_form") {
-                ReminderFormScreen(navController = navController, viewModel = reminderViewModel)
+
+            // 2. Màn hình tạo mới HOẶC Chỉnh sửa (Thêm tham số reminderId)
+            composable(
+                route = "reminder_form?reminderId={reminderId}",
+                arguments = listOf(
+                    navArgument("reminderId") {
+                        type = NavType.StringType
+                        nullable = true // Cho phép null (trường hợp tạo mới)
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val reminderId = backStackEntry.arguments?.getString("reminderId")
+                ReminderFormScreen(
+                    navController = navController,
+                    viewModel = reminderViewModel,
+                    reminderId = reminderId // Truyền ID vào form
+                )
             }
-            // 3. Màn hình chi tiết (Route mới)
+
+            // 3. Màn hình chi tiết
             composable(
                 route = "reminder_detail/{reminderId}",
                 arguments = listOf(navArgument("reminderId") { type = NavType.StringType })

@@ -26,24 +26,36 @@ import com.google.accompanist.flowlayout.FlowRow
 import com.example.pet_health.data.entity.Reminder
 import com.example.pet_health.ui.viewmodel.ReminderViewModel
 
-// ==================== (ĐÃ XÓA LOCAL DATA MODEL Ở ĐÂY) ====================
-
-// ==================== MAIN SCREEN ====================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderScreen(
     navController: NavController? = null,
-    viewModel: ReminderViewModel // <--- Inject ViewModel
+    viewModel: ReminderViewModel
 ) {
-    // Lấy dữ liệu từ ViewModel thay vì tạo biến local
     val reminderList by viewModel.reminders
 
     var selectedFilter by remember { mutableStateOf("Tất cả") }
     var searchText by remember { mutableStateOf("") }
 
-    val filteredList = reminderList.filter {
-        (selectedFilter == "Tất cả" || it.type == selectedFilter) &&
-                (searchText.isBlank() || it.title.contains(searchText, ignoreCase = true))
+    // 1. Định nghĩa danh sách các loại mặc định để so sánh
+    val defaultTypes = listOf("Tiêm phòng", "Tẩy giun", "Tái khám", "Thuốc")
+
+    // Danh sách hiển thị trên Filter Chip
+    val filterOptions = listOf("Tất cả") + defaultTypes + "Khác"
+
+    // 2. Cập nhật Logic lọc thông minh hơn
+    val filteredList = reminderList.filter { reminder ->
+        // Logic lọc theo Loại (Type)
+        val isTypeMatch = when (selectedFilter) {
+            "Tất cả" -> true
+            "Khác" -> reminder.type !in defaultTypes // <--- QUAN TRỌNG: Nếu type không nằm trong danh sách mặc định thì coi là "Khác"
+            else -> reminder.type == selectedFilter
+        }
+
+        // Logic lọc theo Tìm kiếm (Search)
+        val isSearchMatch = searchText.isBlank() || reminder.title.contains(searchText, ignoreCase = true)
+
+        isTypeMatch && isSearchMatch
     }
 
     Scaffold(
@@ -61,7 +73,7 @@ fun ReminderScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB)) // lightPink
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB))
             )
         },
         bottomBar = {
@@ -114,13 +126,12 @@ fun ReminderScreen(
 
                 Spacer(Modifier.height(10.dp))
 
-                // ===== Filter Chips =====
-                val filters = listOf("Tất cả", "Tiêm phòng", "Tẩy giun", "Tái khám", "Thuốc", "Khác")
+                // ===== Filter Chips (Dùng danh sách filterOptions đã tạo ở trên) =====
                 FlowRow(
                     mainAxisSpacing = 8.dp,
                     crossAxisSpacing = 8.dp
                 ) {
-                    filters.forEach { item ->
+                    filterOptions.forEach { item ->
                         FilterChipStyled(
                             text = item,
                             selected = item == selectedFilter,
@@ -135,17 +146,14 @@ fun ReminderScreen(
                 LazyColumn(
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Entity Reminder dùng String ID (UUID) nên key vẫn OK
                     items(filteredList, key = { it.id }) { reminder ->
 
                         ReminderCardStyled(
                             reminder = reminder,
                             onClick = {
-                                // QUAN TRỌNG: Chỉ truyền ID, bên Detail sẽ tự lấy data từ ViewModel
                                 navController?.navigate("reminder_detail/${reminder.id}")
                             },
                             onDelete = {
-                                // Gọi hàm xóa từ ViewModel
                                 viewModel.deleteReminder(reminder.id)
                             }
                         )
@@ -189,14 +197,13 @@ fun FilterChipStyled(text: String, selected: Boolean, onClick: () -> Unit) {
 // ==================== CARD ====================
 @Composable
 fun ReminderCardStyled(
-    reminder: Reminder, // Lúc này Reminder là class từ data.entity
+    reminder: Reminder,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    // Đổi màu thẻ dựa trên trạng thái
     val cardColor = when(reminder.status) {
-        "Hoàn thành" -> Color(0xFFB6F2B8) // Xanh nhạt
-        "Hoãn lại" -> Color(0xFFFFCCCC)   // Đỏ nhạt
+        "Hoàn thành" -> Color(0xFFB6F2B8)
+        "Hoãn lại" -> Color(0xFFFFCCCC)
         else -> Color.White
     }
 
@@ -210,7 +217,6 @@ fun ReminderCardStyled(
         border = BorderStroke(1.5.dp, Color(0xFF8A2BE2))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Header: Loại + Trạng thái
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween

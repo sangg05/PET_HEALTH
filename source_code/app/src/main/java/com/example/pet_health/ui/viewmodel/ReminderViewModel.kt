@@ -70,6 +70,16 @@ class ReminderViewModel : ViewModel() {
         currentList.removeAll { it.id == id }
         _reminders.value = currentList
     }
+    // Hàm cập nhật thông tin nhắc nhở (Edit)
+    fun updateReminder(updatedReminder: Reminder) {
+        val currentList = _reminders.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == updatedReminder.id }
+
+        if (index != -1) {
+            currentList[index] = updatedReminder
+            _reminders.value = currentList
+        }
+    }
 }
 
 // Factory cho ReminderViewModel (Cần thiết để khởi tạo trong Compose)

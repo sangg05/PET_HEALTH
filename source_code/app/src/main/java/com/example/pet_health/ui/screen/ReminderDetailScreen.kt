@@ -121,11 +121,11 @@ fun ReminderDetailScreen(
             status = currentReminder.status,
             backgroundColor = statusColor,
             textColor = statusTextColor,
-            // Chỉ hiện nút sửa nếu chưa hoàn thành (Logic tùy bạn chọn)
+            // Chỉ hiện nút sửa nếu chưa hoàn thành
             showEdit = currentReminder.status == "Sắp tới",
             onEditClick = {
-                // TODO: Chức năng sửa (Cần truyền data ngược lại form, làm sau)
-                // navController.navigate("reminder_form/...")
+                // CHỨC NĂNG SỬA: Chuyển sang màn hình Form kèm theo ID
+                navController.navigate("reminder_form?reminderId=${currentReminder.id}")
             }
         )
 
@@ -134,33 +134,13 @@ fun ReminderDetailScreen(
         // ---------- ACTION BUTTONS ----------
         // Chỉ hiển thị nút khi chưa hoàn thành
         if (currentReminder.status != "Hoàn thành") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            // Nút "Hoàn thành" full width
+            Button(
+                onClick = { showConfirmDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                modifier = Modifier.fillMaxWidth() // Chiếm hết chiều ngang
             ) {
-
-                // Nút HOÃN LẠI
-                Button(
-                    onClick = {
-                        // Gọi ViewModel cập nhật trạng thái
-                        viewModel.updateReminderStatus(currentReminder.id, "Hoãn lại")
-                        // Quay về màn hình trước (tùy chọn)
-                        navController.popBackStack()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3B30)),
-                    modifier = Modifier.weight(1f).padding(end = 8.dp)
-                ) {
-                    Text("Hoãn lại", color = Color.White, fontSize = 16.sp)
-                }
-
-                // Nút HOÀN THÀNH
-                Button(
-                    onClick = { showConfirmDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                    modifier = Modifier.weight(1f).padding(start = 8.dp)
-                ) {
-                    Text("Hoàn thành", color = Color.White, fontSize = 16.sp)
-                }
+                Text("Hoàn thành", color = Color.White, fontSize = 16.sp)
             }
         }
     }
@@ -191,7 +171,7 @@ fun ReminderDetailScreen(
     }
 }
 
-// Composable con để hiển thị thẻ trạng thái (Thay thế cho ReminderHistoryItem cũ)
+// Composable con để hiển thị thẻ trạng thái
 @Composable
 fun ReminderStatusCard(
     time: String,
