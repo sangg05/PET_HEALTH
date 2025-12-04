@@ -25,6 +25,11 @@ import com.google.accompanist.flowlayout.FlowRow
 // Import đúng Entity và ViewModel
 import com.example.pet_health.data.entity.Reminder
 import com.example.pet_health.ui.viewmodel.ReminderViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,49 +39,104 @@ fun ReminderScreen(
 ) {
     val reminderList by viewModel.reminders
 
+    // 1. State cho Tabs
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf("Sắp tới", "Quá hạn", "Đã xong")
+
+    // State cho bộ lọc và tìm kiếm cũ
     var selectedFilter by remember { mutableStateOf("Tất cả") }
     var searchText by remember { mutableStateOf("") }
 
-    // 1. Định nghĩa danh sách các loại mặc định để so sánh
     val defaultTypes = listOf("Tiêm phòng", "Tẩy giun", "Tái khám", "Thuốc")
-
-    // Danh sách hiển thị trên Filter Chip
     val filterOptions = listOf("Tất cả") + defaultTypes + "Khác"
 
-    // 2. Cập nhật Logic lọc thông minh hơn
-    val filteredList = reminderList.filter { reminder ->
-        // Logic lọc theo Loại (Type)
-        val isTypeMatch = when (selectedFilter) {
-            "Tất cả" -> true
-            "Khác" -> reminder.type !in defaultTypes // <--- QUAN TRỌNG: Nếu type không nằm trong danh sách mặc định thì coi là "Khác"
-            else -> reminder.type == selectedFilter
+    // 2. Logic lọc danh sách (QUAN TRỌNG)
+    val filteredList = remember(reminderList, selectedTab, selectedFilter, searchText) {
+        // Lấy ngày hiện tại (đặt giờ về 00:00:00 để so sánh chính xác theo ngày)
+        val today = getStartOfDay(Date())
+
+        reminderList.filter { reminder ->
+            // --- A. Lọc theo Tab (Logic thời gian) ---
+            val reminderDate = parseDate(reminder.date) ?: Date() // Parse ngày từ String
+
+            val isTabMatch = when (selectedTab) {
+                0 -> { // Sắp tới: Chưa xong VÀ (Ngày >= Hôm nay)
+                    reminder.status != "Hoàn thành" && (reminderDate.after(today) || isSameDay(reminderDate, today))
+                }
+                1 -> { // Quá hạn: Chưa xong VÀ (Ngày < Hôm nay)
+                    reminder.status != "Hoàn thành" && reminderDate.before(today)
+                }
+                2 -> { // Đã xong: Chỉ cần trạng thái là Hoàn thành (bất kể ngày)
+                    reminder.status == "Hoàn thành"
+                }
+                else -> true
+            }
+
+            // --- B. Lọc theo Loại (Chip) ---
+            val isTypeMatch = when (selectedFilter) {
+                "Tất cả" -> true
+                "Khác" -> reminder.type !in defaultTypes
+                else -> reminder.type == selectedFilter
+            }
+
+            // --- C. Lọc theo Tìm kiếm ---
+            val isSearchMatch = searchText.isBlank() || reminder.title.contains(searchText, ignoreCase = true)
+
+            // Kết hợp cả 3 điều kiện
+            isTabMatch && isTypeMatch && isSearchMatch
+        }.sortedBy {
+            // Sắp xếp: Nếu tab là Sắp tới -> Ngày gần nhất lên đầu. Các tab khác -> Ngày mới nhất lên đầu
+            parseDate(it.date)?.time
+        }.let { list ->
+            if (selectedTab == 0) list else list.reversed()
         }
-
-        // Logic lọc theo Tìm kiếm (Search)
-        val isSearchMatch = searchText.isBlank() || reminder.title.contains(searchText, ignoreCase = true)
-
-        isTypeMatch && isSearchMatch
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Nhắc lịch",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+            Column {
+                TopAppBar(
+                    title = {
+                        Text("Nhắc lịch", fontWeight = FontWeight.Bold, color = Color.Black)
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController?.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB))
+                )
+
+                // 3. Giao diện Tabs
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color(0xFFFFC0CB),
+                    contentColor = Color(0xFF6A1B9A),
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = Color(0xFF6A1B9A) // Màu thanh gạch dưới
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB))
-            )
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = {
+                                Text(
+                                    title,
+                                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 16.sp
+                                )
+                            }
+                        )
+                    }
+                }
+            }
         },
         bottomBar = {
+            // Thanh Bottom Bar cũ
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -126,7 +186,7 @@ fun ReminderScreen(
 
                 Spacer(Modifier.height(10.dp))
 
-                // ===== Filter Chips (Dùng danh sách filterOptions đã tạo ở trên) =====
+                // ===== Filter Chips =====
                 FlowRow(
                     mainAxisSpacing = 8.dp,
                     crossAxisSpacing = 8.dp
@@ -143,20 +203,30 @@ fun ReminderScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // ===== List of reminders =====
-                LazyColumn(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(filteredList, key = { it.id }) { reminder ->
-
-                        ReminderCardStyled(
-                            reminder = reminder,
-                            onClick = {
-                                navController?.navigate("reminder_detail/${reminder.id}")
-                            },
-                            onDelete = {
-                                viewModel.deleteReminder(reminder.id)
-                            }
+                if (filteredList.isEmpty()) {
+                    // Hiển thị thông báo nếu danh sách trống
+                    Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Không có lịch nhắc nào",
+                            color = Color.Gray,
+                            fontSize = 16.sp
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(filteredList, key = { it.id }) { reminder ->
+                            ReminderCardStyled(
+                                reminder = reminder,
+                                onClick = {
+                                    navController?.navigate("reminder_detail/${reminder.id}")
+                                },
+                                onDelete = {
+                                    viewModel.deleteReminder(reminder.id)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -174,6 +244,32 @@ fun ReminderScreen(
             }
         }
     }
+}
+
+
+// ==================== HELPER FUNCTIONS (XỬ LÝ NGÀY THÁNG) ====================
+fun parseDate(dateStr: String): Date? {
+    return try {
+        // Định dạng ngày phải khớp với lúc bạn lưu (dd/MM/yyyy)
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(dateStr)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+fun getStartOfDay(date: Date): Date {
+    val calendar = Calendar.getInstance()
+    calendar.time = date
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+    return calendar.time
+}
+
+fun isSameDay(date1: Date, date2: Date): Boolean {
+    val fmt = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+    return fmt.format(date1) == fmt.format(date2)
 }
 
 
@@ -207,6 +303,12 @@ fun ReminderCardStyled(
         else -> Color.White
     }
 
+    // Hiển thị nhãn trạng thái khác nhau tùy Tab (để người dùng dễ hiểu)
+    // Nếu chưa xong mà ngày < hôm nay => Hiển thị "Quá hạn" màu đỏ
+    val today = getStartOfDay(Date())
+    val rDate = parseDate(reminder.date)
+    val isOverdue = reminder.status != "Hoàn thành" && rDate != null && rDate.before(today)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,8 +324,16 @@ fun ReminderCardStyled(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(reminder.type, color = Color(0xFF6A1B9A), fontWeight = FontWeight.Bold)
-                if (reminder.status != "Sắp tới") {
-                    Text(reminder.status, fontSize = 12.sp, color = Color.Gray)
+
+                // Logic hiển thị text trạng thái góc phải
+                if (reminder.status == "Hoàn thành") {
+                    Text("Đã xong", fontSize = 12.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                } else if (isOverdue) {
+                    Text("Quá hạn", fontSize = 12.sp, color = Color.Red, fontWeight = FontWeight.Bold)
+                } else if (reminder.status == "Hoãn lại") {
+                    Text("Hoãn lại", fontSize = 12.sp, color = Color.Red)
+                } else {
+                    Text("Sắp tới", fontSize = 12.sp, color = Color.Gray)
                 }
             }
 
