@@ -31,7 +31,7 @@ import com.example.pet_health.ui.screen.ResetPasswordScreen
 import com.example.pet_health.ui.screen.TiemThuocListScreen
 import com.example.pet_health.ui.screen.UpdateInfoScreen
 import com.example.pet_health.ui.screen.WeightHeightScreen
-import com.example.pet_health.ui.screen.RecordDetailScreen // Đã import màn hình chi tiết
+import com.example.pet_health.ui.screen.RecordDetailScreen
 import com.example.pet_health.ui.screens.*
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
@@ -52,7 +52,7 @@ fun AppScreen() {
 
     // ===== KHỞI TẠO REMINDER VIEWMODEL =====
     val reminderViewModel: ReminderViewModel = viewModel(
-        factory = ReminderViewModelFactory()
+        factory = ReminderViewModelFactory(context.applicationContext as android.app.Application)
     )
 
     NavHost(
@@ -64,7 +64,9 @@ fun AppScreen() {
 
             composable("login") {
                 LoginScreen(
-                    navController = navController, // <--- ĐÃ THÊM LẠI DÒNG NÀY
+                    // --- SỬA LỖI: Thêm dòng này vào ---
+                    navController = navController,
+                    // ----------------------------------
                     userRepository = userRepository,
                     onLoginClick = { email, pass ->
                         scope.launch {
@@ -84,8 +86,6 @@ fun AppScreen() {
             }
             composable("register") {
                 RegisterScreen(
-                    // Nếu RegisterScreen cũng báo lỗi tương tự, hãy bỏ comment dòng dưới:
-                    // navController = navController,
                     userRepository = userRepository,
                     onNavigateLogin = {
                         navController.navigate("login") {
@@ -251,7 +251,6 @@ fun AppScreen() {
                     viewModel = reminderViewModel
                 )
             }
-            // ==========================
 
             composable(
                 "weight_height/{petId}",
@@ -266,11 +265,10 @@ fun AppScreen() {
 
             composable("medical_records") { TiemThuocListScreen(navController) }
 
-            // ===== PHẦN SỔ TIÊM CHỦNG =====
             composable("add_record") {
                 AddRecordScreen(
                     navController = navController,
-                    petId = "" // Truyền tham số petId
+                    petId = ""
                 )
             }
 
@@ -284,7 +282,6 @@ fun AppScreen() {
                     vaccineId = vaccineId
                 )
             }
-            // ==============================
 
             composable("notification") { NotificationScreen(navController) }
 

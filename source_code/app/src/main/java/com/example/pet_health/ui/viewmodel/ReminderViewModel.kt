@@ -1,16 +1,20 @@
 package com.example.pet_health.ui.viewmodel
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.pet_health.data.entity.Reminder
+import com.example.pet_health.utils.ReminderScheduler
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
-class ReminderViewModel : ViewModel() {
+// Sửa thành AndroidViewModel để lấy context cho AlarmManager
+class ReminderViewModel(application: Application) : AndroidViewModel(application) {
 
     // Danh sách hiển thị lên UI
     private val _reminders = mutableStateOf<List<Reminder>>(emptyList())
@@ -22,11 +26,13 @@ class ReminderViewModel : ViewModel() {
 
     private var snapshotListener: ListenerRegistration? = null
 
-    // <--- THÊM BIẾN NÀY: Lưu ID vừa tạo để UI biết đường chuyển trang
+    // Biến lưu ID vừa tạo để chuyển trang
     var createdReminderId = mutableStateOf<String?>(null)
 
+    // Khởi tạo bộ đặt lịch (Scheduler)
+    private val scheduler = ReminderScheduler(application.applicationContext)
+
     init {
-        // Tự động tải dữ liệu khi khởi tạo
         fetchRemindersRealtime()
     }
 
@@ -39,7 +45,6 @@ class ReminderViewModel : ViewModel() {
             return
         }
 
-        // Đường dẫn: users -> [userID] -> reminders
         val ref = db.collection("users").document(userId).collection("reminders")
 
         snapshotListener = ref.addSnapshotListener { snapshot, e ->
@@ -60,22 +65,25 @@ class ReminderViewModel : ViewModel() {
     fun addReminder(reminder: Reminder) {
         val userId = auth.currentUser?.uid
         if (userId == null) {
-            Log.e("ReminderViewModel", "Lỗi: User ID là null, không thể lưu")
+            Log.e("ReminderViewModel", "Lỗi: User ID là null")
             return
         }
 
-        // Reset ID trước khi thực hiện lưu
-        createdReminderId.value = null
+        createdReminderId.value = null // Reset ID
 
-        Log.d("ReminderViewModel", "Đang lưu nhắc nhở: ${reminder.title} cho user: $userId")
+        Log.d("ReminderViewModel", "Đang lưu: ${reminder.title}")
 
         db.collection("users").document(userId)
             .collection("reminders")
             .document(reminder.id)
             .set(reminder)
             .addOnSuccessListener {
-                Log.d("ReminderViewModel", "Lưu thành công lên Firebase!")
-                // <--- CẬP NHẬT ID MỚI ĐỂ UI CHUYỂN TRANG
+                Log.d("ReminderViewModel", "Lưu Firebase thành công!")
+
+                // === ĐẶT LỊCH HỆ THỐNG ===
+                scheduler.scheduleReminder(reminder)
+
+                // Cập nhật ID để UI chuyển trang
                 createdReminderId.value = reminder.id
             }
             .addOnFailureListener { e ->
@@ -91,8 +99,15 @@ class ReminderViewModel : ViewModel() {
             .collection("reminders")
             .document(updatedReminder.id)
             .set(updatedReminder)
-            .addOnSuccessListener { Log.d("ReminderViewModel", "Cập nhật thành công") }
-            .addOnFailureListener { e -> Log.e("ReminderViewModel", "Cập nhật thất bại", e) }
+            .addOnSuccessListener {
+                Log.d("ReminderViewModel", "Cập nhật thành công")
+
+                // === CẬP NHẬT LẠI LỊCH HỆ THỐNG ===
+                scheduler.scheduleReminder(updatedReminder)
+            }
+            .addOnFailureListener { e ->
+                Log.e("ReminderViewModel", "Cập nhật thất bại", e)
+            }
     }
 
     // 4. Cập nhật trạng thái
@@ -108,16 +123,34 @@ class ReminderViewModel : ViewModel() {
             .collection("reminders")
             .document(id)
             .update(updates)
+            .addOnSuccessListener {
+                // Nếu đã hoàn thành, có thể hủy lịch báo thức nếu muốn
+                // val reminder = getReminderById(id)
+                // if (reminder != null && newStatus == "Hoàn thành") scheduler.cancelReminder(reminder)
+            }
     }
 
     // 5. Xóa
     fun deleteReminder(id: String) {
         val userId = auth.currentUser?.uid ?: return
 
+        // Tìm reminder trước khi xóa để lấy thông tin hủy lịch
+        val reminderToDelete = getReminderById(id)
+
         db.collection("users").document(userId)
             .collection("reminders")
             .document(id)
             .delete()
+            .addOnSuccessListener {
+                // === HỦY LỊCH HỆ THỐNG ===
+                if (reminderToDelete != null) {
+                    scheduler.cancelReminder(reminderToDelete)
+                    Log.d("ReminderViewModel", "Đã hủy lịch báo thức")
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.w("ReminderViewModel", "Lỗi khi xóa", e)
+            }
     }
 
     // 6. Lấy chi tiết
@@ -131,12 +164,12 @@ class ReminderViewModel : ViewModel() {
     }
 }
 
-// Factory
-class ReminderViewModelFactory : ViewModelProvider.Factory {
+// Factory cần nhận Application Context
+class ReminderViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ReminderViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ReminderViewModel() as T
+            return ReminderViewModel(application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -1,5 +1,9 @@
 package com.example.pet_health.ui.screen
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,6 +42,21 @@ fun ReminderScreen(
     viewModel: ReminderViewModel
 ) {
     val reminderList by viewModel.reminders
+
+    // === XIN QUYỀN THÔNG BÁO (ANDROID 13+) ===
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            // Có thể xử lý nếu quyền bị từ chối (ví dụ hiện Dialog giải thích)
+        }
+    )
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    // =========================================
 
     // 1. State cho Tabs
     var selectedTab by remember { mutableStateOf(0) }

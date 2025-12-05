@@ -37,21 +37,21 @@ fun TiemThuocListScreen(
     val context = LocalContext.current
     val viewModel = remember { VaccineViewModel(context) }
 
-    // Lấy danh sách Vaccine và Pet từ ViewModel
     val vaccineList by viewModel.vaccines.collectAsState()
-    val petList by viewModel.pets.collectAsState() // <--- Lấy danh sách Pet thật
+    val petList by viewModel.pets.collectAsState()
 
-    // State cho Filter: Dùng ID để lọc chính xác
     var selectedPetId by remember { mutableStateOf("all") }
 
-    // Logic Lọc: Nếu chọn "all" thì lấy hết, ngược lại lọc theo petId
+    // State cho việc xóa
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var itemToDelete by remember { mutableStateOf<VaccineEntity?>(null) }
+
     val filteredVaccineList = if (selectedPetId == "all") {
         vaccineList
     } else {
         vaccineList.filter { it.petId == selectedPetId }
     }
 
-    // Nhóm danh sách đã lọc theo năm
     val grouped = filteredVaccineList.groupBy {
         val sdf = SimpleDateFormat("yyyy", Locale.getDefault())
         sdf.format(Date(it.date))
@@ -60,9 +60,7 @@ fun TiemThuocListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Sổ tiêm và thuốc", fontWeight = FontWeight.Bold, color = Color.Black)
-                },
+                title = { Text("Sổ tiêm và thuốc", fontWeight = FontWeight.Bold, color = Color.Black) },
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
@@ -81,6 +79,7 @@ fun TiemThuocListScreen(
         },
         floatingActionButtonPosition = FabPosition.End,
         bottomBar = {
+            // ... (Giữ nguyên BottomBar) ...
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,20 +107,17 @@ fun TiemThuocListScreen(
             Column(
                 modifier = Modifier.fillMaxSize().padding(16.dp)
             ) {
-                // ==== Bộ lọc thú cưng (ĐỘNG) ====
+                // Filter Chips
                 FlowRow(
                     mainAxisSpacing = 8.dp,
                     crossAxisSpacing = 8.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Chip cố định "Tất cả"
                     PetFilterChip(
                         text = "Tất cả",
                         selected = selectedPetId == "all",
                         onClick = { selectedPetId = "all" }
                     )
-
-                    // Render Chip cho từng thú cưng có trong danh sách
                     petList.forEach { pet ->
                         PetFilterChip(
                             text = pet.name,
@@ -133,12 +129,9 @@ fun TiemThuocListScreen(
 
                 Spacer(Modifier.height(10.dp))
 
-                // ==== Danh sách bản ghi ====
+                // Danh sách
                 if (filteredVaccineList.isEmpty()) {
-                    Box(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text("Chưa có bản ghi nào", color = Color.Gray)
                     }
                 } else {
@@ -157,25 +150,55 @@ fun TiemThuocListScreen(
                                 )
                             }
                             items(list) { item ->
-                                // Tìm tên thú cưng tương ứng với ID bản ghi để hiển thị
                                 val petName = petList.find { it.petId == item.petId }?.name ?: "Unknown"
 
                                 TiemThuocCard(
                                     item = item,
-                                    petName = petName, // Truyền tên thú cưng vào
-                                    navController = navController
+                                    petName = petName,
+                                    navController = navController,
+                                    onDeleteClick = {
+                                        // Kích hoạt popup xác nhận
+                                        itemToDelete = item
+                                        showDeleteDialog = true
+                                    }
                                 )
                             }
                         }
                     }
                 }
             }
+
+            // === HỘP THOẠI XÁC NHẬN XÓA ===
+            if (showDeleteDialog && itemToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("Xác nhận xóa") },
+                    text = { Text("Bạn có chắc chắn muốn xóa bản ghi này không?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.deleteVaccine(itemToDelete!!)
+                                showDeleteDialog = false
+                                itemToDelete = null
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                        ) {
+                            Text("Xóa", fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Hủy")
+                        }
+                    },
+                    containerColor = Color.White
+                )
+            }
         }
     }
 }
 
-// ----------------- COMPONENTS -----------------
-
+// Component Filter Chip (Giữ nguyên)
 @Composable
 fun PetFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
@@ -185,10 +208,7 @@ fun PetFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
                 color = if (selected) Color(0xFF7B1FA2) else Color.Gray,
                 shape = RoundedCornerShape(20.dp)
             )
-            .background(
-                color = Color.White,
-                shape = RoundedCornerShape(20.dp)
-            )
+            .background(Color.White, RoundedCornerShape(20.dp))
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
@@ -201,11 +221,13 @@ fun PetFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
+// ==== CẬP NHẬT: Card có thêm nút xóa ====
 @Composable
 fun TiemThuocCard(
     item: VaccineEntity,
-    petName: String, // <--- Thêm tham số này
-    navController: NavController?
+    petName: String,
+    navController: NavController?,
+    onDeleteClick: () -> Unit // <--- Callback khi nhấn xóa
 ) {
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val dateStr = sdf.format(Date(item.date))
@@ -222,17 +244,36 @@ fun TiemThuocCard(
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            Text(
-                text = item.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            // Hiển thị tên thú cưng
-            Text("Thú cưng: $petName")
+            // Hàng tiêu đề + Nút xóa
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = item.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
 
+                // Icon Xóa
+                IconButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Delete, // Hoặc Close
+                        contentDescription = "Delete",
+                        tint = Color(0xFFFF3B30)
+                    )
+                }
+            }
+
+            Text("Thú cưng: $petName")
             Text("Ngày: $dateStr")
             if (!item.clinic.isNullOrEmpty()) {
                 Text("Cơ sở: ${item.clinic}")

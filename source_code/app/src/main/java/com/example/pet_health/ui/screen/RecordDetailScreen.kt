@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-
 import coil.compose.rememberAsyncImagePainter
 import com.example.pet_health.ui.viewmodel.VaccineViewModel
 import java.text.SimpleDateFormat
@@ -35,21 +34,29 @@ fun RecordDetailScreen(
     val context = LocalContext.current
     val viewModel = remember { VaccineViewModel(context) }
 
-    // Lấy list để tìm kiếm (vì ViewModel dùng StateFlow)
+    // 1. Lấy danh sách Vaccine và Pet từ ViewModel
     val vaccines by viewModel.vaccines.collectAsState()
+    val pets by viewModel.pets.collectAsState() // <--- Lấy danh sách Pet
+
     val record = vaccines.find { it.vaccineId == vaccineId }
 
     if (record == null) {
-        // Xử lý khi loading hoặc không tìm thấy (ví dụ show loading)
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-        return // Dừng render phần dưới
+        return
     }
 
-    // Format ngày
+    // 2. Tìm tên thú cưng dựa trên petId
+    val petName = pets.find { it.petId == record.petId }?.name ?: "Không xác định"
+
+    // 3. Xác định loại bản ghi (Nếu có số mũi -> Tiêm, ngược lại -> Thuốc)
+    val isVaccine = record.doseNumber != null
+
+    // 4. Format ngày tháng
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val dateStr = sdf.format(Date(record.date))
+    val startDateStr = sdf.format(Date(record.date))
+    val endDateStr = record.nextDoseDate?.let { sdf.format(Date(it)) }
 
     Scaffold(
         topBar = {
@@ -60,24 +67,22 @@ fun RecordDetailScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = Color.Black)
                     }
                 },
-                // Cập nhật màu TopBar chuẩn (Light Pink)
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB))
             )
-        }
-        // Bỏ containerColor ở đây vì ta sẽ dùng Box gradient bên trong
+        },
+        // Bỏ containerColor để dùng Box gradient
     ) { padding ->
 
-        // Thêm Box chứa nền Gradient
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding) // Padding từ Scaffold xuống
+                .padding(padding)
                 .background(
                     brush = Brush.verticalGradient(
                         listOf(
-                            Color(0xFFFFF6C2), // Vàng nhạt
-                            Color(0xFFFFD6EC), // Hồng nhạt
-                            Color(0xFFEAD6FF)  // Tím nhạt
+                            Color(0xFFFFF6C2),
+                            Color(0xFFFFD6EC),
+                            Color(0xFFEAD6FF)
                         )
                     )
                 )
@@ -102,11 +107,13 @@ fun RecordDetailScreen(
                             .fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Tiêu đề loại bản ghi
                         Text(
-                            text = if (record.doseNumber != null) "Tiêm phòng" else "Dùng thuốc",
+                            text = if (isVaccine) "Tiêm phòng" else "Dùng thuốc",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        // Tên Vắc xin hoặc Tên Thuốc
                         Text(
                             text = record.name,
                             style = MaterialTheme.typography.titleLarge,
@@ -116,15 +123,21 @@ fun RecordDetailScreen(
 
                         Divider(color = Color.LightGray)
 
-                        Text("Thú cưng ID: ${record.petId}") // Cần map ID sang tên
-                        Text("Ngày: $dateStr")
+                        // --- HIỂN THỊ TÊN THÚ CƯNG ---
+                        Text("Thú cưng: $petName")
 
-                        if (!record.clinic.isNullOrEmpty()) {
-                            Text("Cơ sở: ${record.clinic}")
-                        }
-
-                        if (record.doseNumber != null) {
+                        // --- HIỂN THỊ NGÀY THÁNG THEO LOẠI ---
+                        if (isVaccine) {
+                            Text("Ngày tiêm: $startDateStr")
+                            if (!record.clinic.isNullOrEmpty()) {
+                                Text("Cơ sở: ${record.clinic}")
+                            }
                             Text("Mũi số: ${record.doseNumber}")
+                        } else {
+                            Text("Ngày bắt đầu: $startDateStr")
+                            if (endDateStr != null) {
+                                Text("Ngày kết thúc: $endDateStr")
+                            }
                         }
 
                         if (!record.note.isNullOrEmpty()) {

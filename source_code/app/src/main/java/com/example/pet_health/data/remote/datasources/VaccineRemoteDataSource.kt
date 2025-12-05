@@ -12,23 +12,52 @@ class VaccineRemoteDataSource(
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 ) {
 
-    // 📌 Upload ảnh → lấy URL
+    // 1. Upload ảnh -> Lấy URL
     suspend fun uploadVaccineImage(petId: String, uri: Uri?): String? {
         if (uri == null) return null
+        return try {
+            val fileName = "vaccine_${petId}_${UUID.randomUUID()}.jpg"
+            val storageRef = storage.getReference("vaccine_images/$fileName")
 
-        val fileName = "vaccine_${petId}_${UUID.randomUUID()}.jpg"
-        val storageRef = storage.getReference("vaccine_images/$fileName")
-
-        storageRef.putFile(uri).await()
-        return storageRef.downloadUrl.await().toString()
+            storageRef.putFile(uri).await()
+            storageRef.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
-    // 📌 Lưu bản ghi lên Firestore
+    // 2. Lưu bản ghi lên Firestore
     suspend fun uploadVaccine(vaccine: VaccineEntity) {
-        firestore.collection("vaccines")
-            .document(vaccine.vaccineId)
-            .set(vaccine)
-            .await()
+        try {
+            firestore.collection("vaccines")
+                .document(vaccine.vaccineId)
+                .set(vaccine)
+                .await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // 3. Xóa bản ghi trên Firestore (MỚI THÊM)
+    suspend fun deleteVaccine(vaccine: VaccineEntity) {
+        try {
+            // Xóa document trong collection "vaccines" dựa trên ID
+            firestore.collection("vaccines")
+                .document(vaccine.vaccineId)
+                .delete()
+                .await()
+
+            // (Tùy chọn) Nếu bạn muốn xóa luôn ảnh trên Storage để tiết kiệm dung lượng:
+            /*
+            if (!vaccine.photoUrl.isNullOrEmpty()) {
+                val imageRef = storage.getReferenceFromUrl(vaccine.photoUrl)
+                imageRef.delete().await()
+            }
+            */
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
 //package com.example.pet_health.data.remote.datasources

@@ -12,7 +12,7 @@ class VaccineRepository(
 
     // Thêm vaccine / thuốc
     suspend fun addVaccine(
-        id: String, // <--- THÊM THAM SỐ NÀY (Nhận ID từ ViewModel)
+        id: String,
         petId: String,
         name: String,
         date: Long,
@@ -22,15 +22,12 @@ class VaccineRepository(
         imageUri: Uri? = null,
         nextDoseDate: Long? = null
     ): Boolean {
-        // Không tự tạo UUID ở đây nữa
-        // val id = UUID.randomUUID().toString()
-
         // Upload ảnh
         val uploadedUrl = remote.uploadVaccineImage(petId, imageUri)
 
         // Tạo entity với ID được truyền vào
         val vaccine = VaccineEntity(
-            vaccineId = id, // Sử dụng ID từ tham số
+            vaccineId = id,
             petId = petId,
             name = name,
             date = date,
@@ -58,4 +55,15 @@ class VaccineRepository(
     // Lấy danh sách vaccine theo petId
     suspend fun getVaccinesForPet(petId: String) =
         local.getByPet(petId)
+
+    // -------------------------------------------------------
+    // MỚI THÊM: Hàm xóa bản ghi (Gọi cả Remote và Local)
+    // -------------------------------------------------------
+    suspend fun deleteVaccine(vaccine: VaccineEntity) {
+        // 1. Xóa trên Firebase
+        remote.deleteVaccine(vaccine)
+
+        // 2. Xóa trong Room (Local) -> UI sẽ tự cập nhật nhờ Flow
+        local.delete(vaccine)
+    }
 }

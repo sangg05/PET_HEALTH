@@ -22,7 +22,7 @@ import java.util.UUID
 class VaccineViewModel(context: Context) : ViewModel() {
 
     private val repo: VaccineRepository
-    private val petRepo: PetRepository // <--- THÊM: Repository để lấy danh sách Pet
+    private val petRepo: PetRepository
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
@@ -31,7 +31,7 @@ class VaccineViewModel(context: Context) : ViewModel() {
     private val _vaccines = MutableStateFlow<List<VaccineEntity>>(emptyList())
     val vaccines = _vaccines.asStateFlow()
 
-    // <--- THÊM: Danh sách Pet để hiển thị Filter/Dropdown
+    // Danh sách Pet để hiển thị Filter/Dropdown
     private val _pets = MutableStateFlow<List<PetEntity>>(emptyList())
     val pets = _pets.asStateFlow()
 
@@ -49,19 +49,18 @@ class VaccineViewModel(context: Context) : ViewModel() {
         val remote = VaccineRemoteDataSource()
         repo = VaccineRepository(local, remote)
 
-        // <--- THÊM: Init Pet Repo
+        // Init Pet Repo
         petRepo = PetRepository(database)
 
         fetchVaccinesRealtime()
-        fetchPets() // <--- THÊM: Gọi hàm lấy danh sách Pet
+        fetchPets()
     }
 
-    // 1. Lấy danh sách Pet của User hiện tại
+    // 1. Lấy danh sách Pet
     private fun fetchPets() {
         viewModelScope.launch {
             val userId = auth.currentUser?.uid
             if (userId != null) {
-                // Lấy từ Room (dữ liệu đã được PetViewModel sync về trước đó)
                 val petList = petRepo.getPetsByUserId(userId)
                 _pets.value = petList
             }
@@ -93,21 +92,17 @@ class VaccineViewModel(context: Context) : ViewModel() {
     ) {
         viewModelScope.launch {
             isLoading.value = true
-            // Reset trạng thái trước khi thêm
             success.value = false
             createdVaccineId.value = null
 
             try {
-                // 1. Tự tạo ID tại đây
                 val newId = UUID.randomUUID().toString()
 
-                // 2. Truyền ID xuống Repository
                 val result = repo.addVaccine(
-                    id = newId, // Truyền ID vào
+                    id = newId,
                     petId, name, date, clinic, doseNumber, note, imageUri, nextDoseDate
                 )
 
-                // 3. Nếu thành công, lưu ID lại để UI sử dụng
                 if (result) {
                     createdVaccineId.value = newId
                     success.value = true
@@ -117,6 +112,21 @@ class VaccineViewModel(context: Context) : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 success.value = false
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    // 4. Xóa Vaccine (MỚI THÊM)
+    fun deleteVaccine(vaccine: VaccineEntity) {
+        viewModelScope.launch {
+            isLoading.value = true
+            try {
+                repo.deleteVaccine(vaccine)
+                // Không cần cập nhật _vaccines thủ công vì fetchVaccinesRealtime sẽ tự lo việc đó
+            } catch (e: Exception) {
+                e.printStackTrace()
             } finally {
                 isLoading.value = false
             }
