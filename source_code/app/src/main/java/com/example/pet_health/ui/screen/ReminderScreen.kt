@@ -15,7 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset // <--- DÒNG NÀY ĐÃ ĐƯỢC THÊM VÀO
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -173,7 +173,15 @@ fun ReminderScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF7B1FA2), modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                IconButton(onClick = { navController?.navigate("notification") }) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Thông báo",
+                        tint = Color.LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
                 Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
             }
         }
@@ -284,7 +292,7 @@ fun parseDateTime(dateStr: String, timeStr: String): Date? {
     return try {
         // Định dạng phải khớp với input: "dd/MM/yyyy HH:mm"
         val format = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-        format.parse("$dateStr $timeStr")
+        return format.parse("$dateStr $timeStr")
     } catch (e: Exception) {
         null
     }

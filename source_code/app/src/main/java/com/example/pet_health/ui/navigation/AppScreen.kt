@@ -16,7 +16,6 @@ import androidx.navigation.compose.navigation
 import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.ui.screen.AccountActionsScreen
-//import com.example.pet_health.ui.screen.AccountManagementScreen
 import com.example.pet_health.ui.screen.AddRecordScreen
 import com.example.pet_health.ui.screen.ChangePasswordScreen
 import com.example.pet_health.ui.screen.ChooseAvatarScreen
@@ -38,7 +37,10 @@ import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import com.example.pet_health.ui.viewmodel.ReminderViewModel
 import com.example.pet_health.ui.viewmodel.ReminderViewModelFactory
 import kotlinx.coroutines.launch
-import pet_health.data.local.AppDatabase
+import com.example.pet_health.data.local.AppDatabase
+import com.example.pet_health.ui.viewmodel.NotificationViewModel
+import com.example.pet_health.data.repository.NotificationRepository
+import com.example.pet_health.ui.viewmodel.NotificationViewModelFactory
 
 @Composable
 fun AppScreen() {
@@ -50,10 +52,22 @@ fun AppScreen() {
     val database = AppDatabase.getDatabase(context)
     val repository = PetRepository(database)
 
-    // ===== KHỞI TẠO REMINDER VIEWMODEL =====
+    // Reminder ViewModel
     val reminderViewModel: ReminderViewModel = viewModel(
         factory = ReminderViewModelFactory(context.applicationContext as android.app.Application)
     )
+
+    // 🚀 Notification ViewModel (ĐÃ SỬA)
+    val notificationRepository = remember { NotificationRepository(database.notificationDao()) }
+
+    val notificationViewModel: NotificationViewModel = viewModel(
+        factory = NotificationViewModelFactory(
+            context.applicationContext as android.app.Application,
+            notificationRepository
+        )
+    )
+
+
 
     NavHost(
         navController = navController,
@@ -64,9 +78,7 @@ fun AppScreen() {
 
             composable("login") {
                 LoginScreen(
-                    // --- SỬA LỖI: Thêm dòng này vào ---
                     navController = navController,
-                    // ----------------------------------
                     userRepository = userRepository,
                     onLoginClick = { email, pass ->
                         scope.launch {
@@ -84,6 +96,7 @@ fun AppScreen() {
                     onNavigateForgot = { navController.navigate("forgot") }
                 )
             }
+
             composable("register") {
                 RegisterScreen(
                     userRepository = userRepository,
@@ -99,6 +112,7 @@ fun AppScreen() {
                     }
                 )
             }
+
             composable("forgot") {
                 ForgotPasswordScreen(
                     onSendClick = { email ->
@@ -107,6 +121,7 @@ fun AppScreen() {
                     onNavigateLogin = { navController.popBackStack() }
                 )
             }
+
             composable(
                 route = "reset_password/{email}",
                 arguments = listOf(
@@ -217,7 +232,7 @@ fun AppScreen() {
             composable("health_records") { HealthRecordScreen(navController) }
             composable("add_health_record") { AddHealthRecordScreen(navController) }
 
-            // ===== PHẦN NHẮC LỊCH =====
+            // Reminder
             composable("reminder") {
                 ReminderScreen(navController = navController, viewModel = reminderViewModel)
             }
@@ -283,7 +298,13 @@ fun AppScreen() {
                 )
             }
 
-            composable("notification") { NotificationScreen(navController) }
+            // 🚀 TRUYỀN VIEWMODEL (ĐÃ SỬA LỖI)
+            composable("notification") {
+                NotificationScreen(
+                    navController = navController,
+                    viewModel = notificationViewModel
+                )
+            }
 
             composable("account") {
                 AccountManagementScreen(
@@ -296,13 +317,9 @@ fun AppScreen() {
             composable("account_actions") {
                 AccountActionsScreen(
                     onBack = { navController.popBackStack() },
-                    onUpdateInfo = {
-                        navController.navigate("update_info")
-                    },
+                    onUpdateInfo = { navController.navigate("update_info") },
                     onUpdateAvatar = { navController.navigate("choose_avatar") },
-                    onChangePassword = {
-                        navController.navigate("change_password")
-                    },
+                    onChangePassword = { navController.navigate("change_password") },
                     onLogout = {
                         navController.navigate("login") {
                             popUpTo("account") { inclusive = true }
@@ -314,27 +331,21 @@ fun AppScreen() {
             composable("change_password") {
                 ChangePasswordScreen(
                     onBack = { navController.popBackStack() },
-                    onPasswordChanged = {
-                        navController.popBackStack()
-                    }
+                    onPasswordChanged = { navController.popBackStack() }
                 )
             }
 
             composable("update_info") {
                 UpdateInfoScreen(
                     onBack = { navController.popBackStack() },
-                    onSave = {
-                        navController.popBackStack()
-                    }
+                    onSave = { navController.popBackStack() }
                 )
             }
 
             composable("choose_avatar") {
                 ChooseAvatarScreen(
                     onBack = { navController.popBackStack() },
-                    onSelect = { uri ->
-                        navController.popBackStack()
-                    }
+                    onSelect = { navController.popBackStack() }
                 )
             }
         }

@@ -16,7 +16,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import pet_health.data.local.AppDatabase
+import com.example.pet_health.data.local.AppDatabase
 import java.util.UUID
 
 class VaccineViewModel(context: Context) : ViewModel() {

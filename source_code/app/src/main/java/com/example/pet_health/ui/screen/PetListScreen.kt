@@ -31,7 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
-import pet_health.data.local.AppDatabase
+import com.example.pet_health.data.local.AppDatabase
 import java.util.concurrent.TimeUnit
 import androidx.compose.foundation.lazy.items
 import java.text.Normalizer

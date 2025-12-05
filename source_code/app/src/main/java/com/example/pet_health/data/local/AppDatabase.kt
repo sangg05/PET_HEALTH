@@ -1,4 +1,5 @@
-package pet_health.data.local
+package com.example.pet_health.data.local
+
 
 import android.content.Context
 import androidx.room.Database
@@ -8,6 +9,8 @@ import pet_health.data.local.dao.*
 import com.example.pet_health.data.entity.*
 import com.example.pet_health.data.local.dao.PetDao
 import com.example.pet_health.data.local.dao.SymptomLogDao
+import com.example.pet_health.data.local.dao.NotificationDao
+
 
 @Database(
     entities = [
@@ -19,8 +22,9 @@ import com.example.pet_health.data.local.dao.SymptomLogDao
         VaccineEntity::class,
         UserActivityLogEntity::class,
         PetImageEntity::class,
+        NotificationEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,7 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userActivityLogDao(): UserActivityLogDao
     abstract fun petImageDao(): PetImageDao
     abstract fun symptomLogDao(): SymptomLogDao
-
+    abstract fun notificationDao(): NotificationDao
 
 
     companion object{

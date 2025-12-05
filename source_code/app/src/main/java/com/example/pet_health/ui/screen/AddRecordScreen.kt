@@ -38,7 +38,7 @@ import com.example.pet_health.data.repository.PetRepository
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModelFactory
 import com.example.pet_health.ui.viewmodel.VaccineViewModel
-import pet_health.data.local.AppDatabase
+import com.example.pet_health.data.local.AppDatabase
 import java.text.SimpleDateFormat
 import java.util.*
 
