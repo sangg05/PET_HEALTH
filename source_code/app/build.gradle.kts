@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.androidx.ui.text)
     implementation(libs.ui)
     implementation(libs.firebase.storage)
+    implementation(libs.ui.text)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

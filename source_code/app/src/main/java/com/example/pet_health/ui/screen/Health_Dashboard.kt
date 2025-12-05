@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import BottomBar
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,12 +17,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.entity.SymptomLogEntity
@@ -75,30 +78,31 @@ fun HealthTrackingScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
-        }
+        },
+        bottomBar = { BottomBar(navController = navController) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFFFF6C2),
+                            Color(0xFFFFD6EC),
+                            Color(0xFFEAD6FF)
+                        )
+                    )
+                )
                 .verticalScroll(scrollState)
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
             // --- Pet Chips ---
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                mainAxisSpacing = 6.dp,
-                crossAxisSpacing = 6.dp
-            ) {
-                petOptions.forEach { pet ->
-                    val petName = pet?.name ?: "Tất cả"
-                    AppFilterChip(
-                        text = petName,
-                        selected = selectedPet?.petId == pet?.petId || (selectedPet == null && pet == null),
-                        onClick = { viewModel.selectPet(pet) }
-                    )
-                }
-            }
+            PetFilterChips(
+                petOptions = petOptions,
+                selectedPet = selectedPet,
+                onPetSelected = { viewModel.selectPet(it) }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -221,7 +225,50 @@ fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
         }
     }
 }
+@Composable
+fun PetFilterChips(
+    petOptions: List<PetEntity?>,
+    selectedPet: PetEntity?,
+    onPetSelected: (PetEntity?) -> Unit,
+    maxLines: Int = 2
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val approxChipsPerLine = 4
+    val maxVisible = maxLines * approxChipsPerLine
+    val visibleChips = if (expanded) petOptions else petOptions.take(maxVisible)
 
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        mainAxisSpacing = 6.dp,
+        crossAxisSpacing = 6.dp
+    ) {
+        visibleChips.forEach { pet ->
+            val petName = pet?.name ?: "Tất cả"
+            AppFilterChip(
+                text = petName,
+                selected = selectedPet?.petId == pet?.petId || (selectedPet == null && pet == null),
+                onClick = { onPetSelected(pet) }
+            )
+        }
+
+        if (petOptions.size > maxVisible) {
+            val buttonIcon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
+            IconButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0xFFE0C4F0))
+            ) {
+                Icon(
+                    imageVector = buttonIcon,
+                    contentDescription = if (expanded) "Thu gọn" else "Mở rộng",
+                    tint = Color(0xFFCE3CCB)
+                )
+            }
+        }
+    }
+}
 @Composable
 fun HealthMetricCard(
     value: String,
@@ -395,16 +442,48 @@ fun SymptomForm(
 }
 @Composable
 fun SymptomItem(symptom: SymptomLogEntity, onDelete: (SymptomLogEntity) -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-                Text(symptom.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF0FF)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Tên triệu chứng: ${symptom.name}",                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF6200EE)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(symptom.description, fontSize = 12.sp, color = Color.Gray)
+                Text(
+                    text = symptom.description,
+                    fontSize = 16.sp,
+                    color = Color.Gray
+                )
             }
-            IconButton(onClick = { onDelete(symptom) }) {
-                Icon(Icons.Default.Delete, contentDescription = "Xóa triệu chứng", tint = Color.Red)
+
+            IconButton(
+                onClick = { onDelete(symptom) },
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(Color(0xFFFFE0E0), shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Xóa triệu chứng",
+                    tint = Color.Red
+                )
             }
         }
     }
 }
+

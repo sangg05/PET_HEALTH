@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screens
 
+import BottomBar
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.example.pet_health.R
 import com.example.pet_health.data.repository.UserRepository
@@ -40,48 +42,11 @@ fun HomeScreen(navController: NavController,userRepository: UserRepository) {
     val scrollState = rememberScrollState()
     val logoSize = 50.dp
     val context = LocalContext.current
-
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     Scaffold(
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .background(Color.White),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.navigate("home")}) {
-                    Icon(
-                        Icons.Default.Home,
-                        contentDescription = "Trang chủ",
-                        tint = Color(0xFF6200EE),
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                IconButton(onClick = {navController.navigate("note")}) {
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                IconButton(onClick = {navController.navigate("account")
-                }) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Hồ sơ",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        }
-    ) { paddingValues->
+        bottomBar = { BottomBar(navController = navController) }
+    ){ paddingValues->
         Box(
             modifier = Modifier
                 .fillMaxSize()

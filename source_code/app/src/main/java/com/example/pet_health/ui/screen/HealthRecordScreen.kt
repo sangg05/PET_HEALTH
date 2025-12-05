@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screens
 
+import BottomBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.pet_health.data.entity.HealthRecordEntity
+import com.example.pet_health.ui.screen.lightPink
 import com.example.pet_health.ui.viewmodel.HealthRecordViewModel
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import com.google.accompanist.flowlayout.FlowRow
@@ -44,11 +48,10 @@ fun HealthRecordScreen(
     val pets = petViewModel.pets
     val healthRecords = healthRecordViewModel.healthRecords.collectAsState()
 
-    val selectedPet = remember { mutableStateOf("Tất cả") }
-
     val petOptions = remember(pets.value) {
         listOf("Tất cả") + pets.value.map { it.name }.distinct()
     }
+    val selectedPet = remember { mutableStateOf("Tất cả") }
 
     val filteredRecords = remember(healthRecords.value, selectedPet.value) {
         if (selectedPet.value == "Tất cả") healthRecords.value
@@ -77,71 +80,33 @@ fun HealthRecordScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
         },
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .background(Color.White),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { /* xử lý Home */ }) {
-                    Icon(
-                        Icons.Default.Home,
-                        contentDescription = "Trang chủ",
-                        tint = Color(0xFF6200EE),
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                IconButton(onClick = { /* xử lý Notifications */ }) {
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                IconButton(onClick = { /* xử lý Profile */ }) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Hồ sơ",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        }
+        bottomBar = { BottomBar(navController = navController) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
                     )
                 )
                 .padding(innerPadding)
+                .fillMaxSize()
                 .padding(16.dp)
+
         ) {
             // Filter chip
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                mainAxisSpacing = 6.dp,
-                crossAxisSpacing = 6.dp
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
             ) {
-                petOptions.forEach { pet ->
-                    AppFilterChip(
-                        text = pet,
-                        selected = selectedPet.value == pet,
-                        onClick = { selectedPet.value = pet }
-                    )
-                }
+                HealthRecordFilterChips(
+                    petOptions = petOptions,
+                    selectedPet = selectedPet
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -201,34 +166,79 @@ private fun Long.toDate(): String {
 }
 
 @Composable
-fun AppFilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
+fun AppFilterChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = if (selected) Color(0xFFCE3CCB).copy(alpha = 0.2f) else Color.White
+    val borderColor = Color(0xFFCE3CCB)
+    val textColor = if (selected) Color(0xFFCE3CCB) else Color.Black
+
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(50),
-        color = if (selected) Color(0xFFCE3CCB).copy(alpha = 0.15f) else Color.White,
-        border = BorderStroke(
-            1.dp,
-            if (selected) Color(0xFFCE3CCB) else Color.Gray.copy(alpha = 0.4f)
-        ),
+        color = backgroundColor,
+        border = BorderStroke(1.dp, borderColor),
         modifier = Modifier
-            .padding(horizontal = 4.dp)
-            .height(36.dp)
+            .padding(4.dp)
+            .height(36.dp)  // giống PetTypeChip
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier.padding(horizontal = 14.dp)
         ) {
             Text(
                 text = text,
-                color = if (selected) Color(0xFFCE3CCB) else Color.Black,
-                fontSize = 14.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                fontSize = 16.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = textColor
             )
         }
     }
 }
 
+@Composable
+fun HealthRecordFilterChips(
+    petOptions: List<String>,
+    selectedPet: MutableState<String>,
+    maxLines: Int = 2 // Hiển thị tối đa 2 dòng trước
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val approxChipsPerLine = 4 // giả định mỗi dòng ~4 chip
+    val maxVisible = maxLines * approxChipsPerLine
+    val visibleChips = if (expanded) petOptions else petOptions.take(maxVisible)
+
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        mainAxisSpacing = 6.dp,
+        crossAxisSpacing = 6.dp
+    ) {
+        visibleChips.forEach { pet ->
+            AppFilterChip(
+                text = pet,
+                selected = selectedPet.value == pet,
+                onClick = { selectedPet.value = pet }
+            )
+        }
+
+        val buttonIcon = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown
+        IconButton(
+            onClick = { expanded = !expanded },
+            modifier = Modifier
+                .height(44.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFE0C4F0))
+        ) {
+            Icon(
+                imageVector = buttonIcon,
+                contentDescription = if (expanded) "Thu gọn" else "Mở rộng",
+                tint = Color(0xFFCE3CCB)
+            )
+        }
+    }
+}
 @Composable
 fun HealthTimelineItem(
     petName: String,
@@ -246,40 +256,52 @@ fun HealthTimelineItem(
             .padding(vertical = 6.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = petName,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color(0xFF6200EE)
-            )
-            Text(
-                text = date,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = Color(0xFF333333)
-            )
             // Row ngày + xóa
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box( modifier = Modifier .size(10.dp) .clip(RoundedCornerShape(50)) .background(Color(0xFFCE3CCB)) )
-                Divider( color = Color(0xFFCE3CCB), thickness = 1.dp, modifier = Modifier.weight(1f) )
+                Column {
+                    Text(petName, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF6200EE))
+                    Text(date, fontSize = 16.sp, color = Color.Gray)
+                }
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "Xóa bệnh án", tint = Color.Red)
                 }
             }
 
+            // Hàng dưới: timeline
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFFCE3CCB))
+                )
+                Divider(
+                    color = Color(0xFFCE3CCB),
+                    thickness = 2.dp,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(text = "Triệu chứng", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-            Text(text = diagnosis, fontSize = 14.sp, color = Color.Black)
+            Text(text = "Triệu chứng", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            Text(text = diagnosis, fontSize = 16.sp, color = Color.Black)
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(text = "Đơn thuốc", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-            Text(text = prescription, fontSize = 14.sp, color = Color.Black)
+            Text(text = "Đơn thuốc", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            Text(text = prescription, fontSize = 16.sp, color = Color.Black)
         }
     }
 }

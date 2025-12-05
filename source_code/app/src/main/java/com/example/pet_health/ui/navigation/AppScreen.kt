@@ -116,6 +116,7 @@ fun AppScreen() {
             notificationRepository
         )
     )
+
     NavHost(
         navController = navController,
         startDestination = "auth"

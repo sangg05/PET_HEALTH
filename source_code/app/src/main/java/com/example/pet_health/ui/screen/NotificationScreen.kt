@@ -32,9 +32,7 @@ fun NotificationScreen(
     val notifications by viewModel.notifications.collectAsState()
 
     Scaffold(
-        bottomBar = {
-            BottomNavigationBarNotification(navController)
-        }
+
     ) { paddingValues ->
 
         Column(

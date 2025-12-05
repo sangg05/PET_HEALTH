@@ -71,6 +71,13 @@ fun AddHealthRecordScreen(
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
+    val customTextFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        disabledContainerColor = Color.White,
+    )
+    val cornerShape = RoundedCornerShape(10.dp)
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -165,7 +172,9 @@ fun AddHealthRecordScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor()
+                            .menuAnchor(),
+                        colors = customTextFieldColors,
+                        shape = cornerShape
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -182,13 +191,15 @@ fun AddHealthRecordScreen(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // === Các trường nhập liệu ===
                 PetInputField(
                     label = "Ngày khám",
                     value = date,
                     onValueChange = { date = it },
                     trailingIcon = Icons.Default.DateRange,
-                    isDateField = true // bật DatePicker
+                    isDateField = true
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 PetInputField(

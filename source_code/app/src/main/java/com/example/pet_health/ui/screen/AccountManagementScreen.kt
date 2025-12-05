@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screens
 
+import BottomBar
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -61,7 +62,6 @@ fun AccountManagementScreen(
     onNavigateMore: () -> Unit = {},
     userRepository: UserRepository,
 ) {
-    val background = Color(0xFFF3CCE4)
     val cardColor = Color.White
 
     var note by remember { mutableStateOf("") }
@@ -78,57 +78,14 @@ fun AccountManagementScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        navController.navigate("account_actions")
-                    }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_more),
-                            contentDescription = "More",
-                            modifier = Modifier.size(25.dp)
-                        )
+                    IconButton(onClick = { navController.navigate("account_actions") }) {
+                        Icon(painter = painterResource(id = R.drawable.ic_more), contentDescription = "More", modifier = Modifier.size(25.dp))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
         },
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .background(Color.White),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { /* xử lý Home */ }) {
-                    Icon(
-                        Icons.Default.Home,
-                        contentDescription = "Trang chủ",
-                        tint = Color(0xFF6200EE),
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                IconButton(onClick = { /* xử lý Notifications */ }) {
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                IconButton(onClick = {navController.navigate("account")
-                }) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Hồ sơ",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        }
+        bottomBar = { BottomBar(navController = navController) }
     ){ padding ->
 
         Column(

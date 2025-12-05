@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -70,8 +71,10 @@ fun ForgotPasswordScreen(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            "QUÊN MẬT KHẨU",
-            fontSize = 26.sp
+            "Quên mật khẩu",
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
         )
 
         Spacer(Modifier.height(20.dp))
@@ -82,8 +85,10 @@ fun ForgotPasswordScreen(
             onValueChange = { email = it },
             placeholder = { Text("Nhập email khôi phục") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(14.dp)),
+        shape = RoundedCornerShape(14.dp)
         )
 
         Spacer(Modifier.height(22.dp))
@@ -116,13 +121,22 @@ fun ForgotPasswordScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Gửi link khôi phục")
+            Text(
+                "Khôi phục",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
 
         Spacer(Modifier.height(18.dp))
 
         TextButton(onClick = onNavigateLogin) {
-            Text("Quay lại đăng nhập", color = Color.Black)
+            Text(
+                "Quay lại đăng nhập",
+                color = Color.Black,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

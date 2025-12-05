@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,6 +34,7 @@ import com.example.pet_health.ui.viewmodel.LoginViewModelFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.format.TextStyle
 
 @Composable
 fun LoginScreen(
@@ -106,9 +108,11 @@ fun LoginScreen(
         OutlinedTextField(
             value = email,
             onValueChange = {  viewModel.savedEmail.value = it},
-            placeholder = { Text("Nhập email/số điện thoại") },
+            placeholder = { Text("Nhập email") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(14.dp)),
             shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
@@ -116,7 +120,7 @@ fun LoginScreen(
                     contentDescription = "email",
                     modifier = Modifier.size(22.dp)
                 )
-            }
+            },
         )
 
         Spacer(Modifier.height(16.dp))
@@ -128,7 +132,9 @@ fun LoginScreen(
             placeholder = { Text("Nhập mật khẩu") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(14.dp)),
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_key),
@@ -155,15 +161,19 @@ fun LoginScreen(
         val rememberMe by viewModel.rememberMe
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+
         ) {
             Checkbox(
                 checked = rememberMe,
                 onCheckedChange = { viewModel.rememberMe.value = it },
                 colors = CheckboxDefaults.colors(
                     checkmarkColor = Color.White,
-                    checkedColor = buttonColor
-                )
+                    checkedColor = buttonColor,
+                    uncheckedColor = Color.Black
+                ),
+
             )
             Text(
                 "Ghi nhớ đăng nhập",
@@ -210,7 +220,7 @@ fun LoginScreen(
                 Text(
                     "Đăng ký",
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color.Black,
                 )
             }
         }

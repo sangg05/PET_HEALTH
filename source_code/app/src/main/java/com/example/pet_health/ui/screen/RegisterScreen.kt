@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,7 +50,9 @@ fun RegisterScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(background)
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState())
+            .imePadding(), // đẩy layout khi bàn phím xuất hiện
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -93,7 +97,9 @@ fun RegisterScreen(
             onValueChange = { email = it },
             placeholder = { Text("Email") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(14.dp)),
             shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
@@ -112,7 +118,9 @@ fun RegisterScreen(
             onValueChange = { name = it },
             placeholder = { Text("Tên hiển thị") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(14.dp)),
             shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(
@@ -131,7 +139,9 @@ fun RegisterScreen(
             onValueChange = { pass = it },
             placeholder = { Text("Mật khẩu") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(14.dp)),
             shape = RoundedCornerShape(14.dp),
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             leadingIcon = {
@@ -151,7 +161,9 @@ fun RegisterScreen(
             onValueChange = { confirmPass = it },
             placeholder = { Text("Xác nhận mật khẩu") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, shape = RoundedCornerShape(14.dp)),
             shape = RoundedCornerShape(14.dp),
             leadingIcon = {
                 Icon(

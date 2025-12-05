@@ -64,10 +64,7 @@ fun ReminderDetailScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 },
-                // Màu nền TopBar giống ReminderScreen (Light Pink)
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFFC0CB)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
         }
     ) { innerPadding ->

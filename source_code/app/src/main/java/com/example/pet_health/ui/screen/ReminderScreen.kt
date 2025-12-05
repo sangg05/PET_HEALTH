@@ -132,7 +132,7 @@ fun ReminderScreen(
                             Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFC0CB))
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
                 )
 
                 // 3. Giao diện Tabs
