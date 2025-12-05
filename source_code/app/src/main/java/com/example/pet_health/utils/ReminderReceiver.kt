@@ -11,10 +11,11 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.pet_health.MainActivity
 import com.example.pet_health.data.local.AppDatabase
-import com.example.pet_health.data.entity.NotificationEntity
+import com.example.pet_health.data.entity.NotificationEntity // Import Entity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit // Thêm import này
 
 class ReminderReceiver : BroadcastReceiver() {
 
@@ -23,30 +24,38 @@ class ReminderReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra("TITLE") ?: "Nhắc nhở thú cưng"
         val message = intent.getStringExtra("MESSAGE") ?: "Đã đến giờ chăm sóc thú cưng của bạn!"
         val requestCode = intent.getIntExtra("ID", 0)
+        // Lấy ID thật của Reminder từ Scheduler
         val reminderId = intent.getStringExtra("REMINDER_ID")
 
         Log.d("ReminderReceiver", "Báo thức kích hoạt! ID: $requestCode, Reminder ID: $reminderId")
 
-        // Lưu thông báo vào DB
+        // 1. Lưu thông báo vào DB
         saveNotificationToDB(context, reminderId, title, message)
 
-        // Hiển thị thông báo
+        // 2. Hiển thị thông báo hệ thống
         showNotification(context, title, message, requestCode)
     }
 
+    // Hàm lưu vào Room DB
     private fun saveNotificationToDB(context: Context, reminderId: String?, title: String, message: String) {
-        val db = AppDatabase.getDatabase(context)
+        // Sử dụng ApplicationContext để lấy DB an toàn
+        val appContext = context.applicationContext
+        val db = AppDatabase.getDatabase(appContext)
         val dao = db.notificationDao()
 
+        // Thực hiện DB operation trên CoroutineScope IO
         CoroutineScope(Dispatchers.IO).launch {
             dao.insert(
                 NotificationEntity(
-                    reminderId = "",
+                    // id sẽ tự autoGenerate
+                    reminderId = reminderId ?: "", // Gán ID thật (hoặc rỗng nếu không xác định)
                     title = title,
-                    message = message
+                    message = message,
+                    timestamp = System.currentTimeMillis(),
+                    isRead = false
                 )
             )
-            Log.d("ReminderReceiver", "Đã lưu Notification vào DB")
+            Log.d("ReminderReceiver", "Đã lưu Notification vào DB cho Reminder ID: $reminderId")
         }
     }
 
@@ -67,6 +76,8 @@ class ReminderReceiver : BroadcastReceiver() {
 
         val contentIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            // Optional: Để mở thẳng màn hình chi tiết, bạn cần dùng DeepLink URI,
+            // nhưng hiện tại ta sẽ mở MainActivity
         }
 
         val pendingIntent = PendingIntent.getActivity(
