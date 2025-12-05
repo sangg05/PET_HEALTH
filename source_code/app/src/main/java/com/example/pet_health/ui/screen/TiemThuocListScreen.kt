@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import BottomBar
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,7 +36,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TiemThuocListScreen(
-    navController: NavController? = null
+    navController: NavController
 ) {
     val context = LocalContext.current
     val viewModel = remember { VaccineViewModel(context) }
@@ -83,6 +84,7 @@ fun TiemThuocListScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
         },
+
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController?.navigate("add_record") },
@@ -92,35 +94,7 @@ fun TiemThuocListScreen(
             }
         },
         floatingActionButtonPosition = FabPosition.End,
-        bottomBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .background(Color.White),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Home,
-                    contentDescription = "Trang chủ",
-                    tint = Color(0xFF7B1FA2),
-                    modifier = Modifier.size(32.dp)
-                )
-                Icon(
-                    Icons.Default.Notifications,
-                    contentDescription = "Thông báo",
-                    tint = Color.LightGray,
-                    modifier = Modifier.size(32.dp)
-                )
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = "Hồ sơ",
-                    tint = Color.LightGray,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-        }
+        bottomBar = { BottomBar(navController = navController) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -262,7 +236,7 @@ fun FilterChip(text: String, selected: Boolean, onClick: () -> Unit) {
 fun TiemThuocCard(
     item: VaccineEntity,
     petName: String,
-    navController: NavController?,
+    navController: NavController,
     onDeleteClick: () -> Unit
 ) {
     val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())

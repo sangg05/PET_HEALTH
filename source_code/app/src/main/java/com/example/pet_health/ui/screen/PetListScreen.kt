@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screens
 
+import BottomBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -79,17 +80,7 @@ fun PetListScreen(navController: NavController, petViewModel: PetViewModel) {
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFD2FC))
             )
         },
-        bottomBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth().height(60.dp).background(Color.White),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-            }
-        }
+        bottomBar = { BottomBar(navController = navController) }
     ) { innerPadding ->
         Box(
             modifier = Modifier.fillMaxSize()

@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import BottomBar
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -120,17 +121,7 @@ fun EditPetScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.pet_health.ui.screens.lightPink)
             )
         },
-        bottomBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth().height(60.dp).background(Color.White),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Home, "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Notifications, "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                Icon(Icons.Default.Person, "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-            }
-        }
+        bottomBar = { BottomBar(navController = navController) }
     ) { innerPadding ->
         Column(
             modifier = Modifier

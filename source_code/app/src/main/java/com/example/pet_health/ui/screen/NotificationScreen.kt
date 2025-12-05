@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import BottomBar
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,9 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.pet_health.data.entity.NotificationEntity
+import com.example.pet_health.ui.screens.lightPink
 import com.example.pet_health.ui.viewmodel.NotificationViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+
+@OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun NotificationScreen(
@@ -32,7 +36,18 @@ fun NotificationScreen(
     val notifications by viewModel.notifications.collectAsState()
 
     Scaffold(
-
+            topBar = {
+                TopAppBar(
+                    title = { Text("Thông báo", fontWeight = FontWeight.Bold, color = Color.Black) },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
+                )
+            },
+            bottomBar = { BottomBar(navController = navController) }
     ) { paddingValues ->
 
         Column(
@@ -40,24 +55,16 @@ fun NotificationScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
                 .background(
-                    brush = Brush.verticalGradient(
-                        listOf(Color(0xFFF7C8E0), Color(0xFFF9E6F2))
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFFFF6C2),
+                            Color(0xFFFFD6EC),
+                            Color(0xFFEAD6FF)
+                        )
                     )
                 )
                 .padding(16.dp)
         ) {
-            // ===== Title =====
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color(0xFF4A004A))
-                }
-                Text(
-                    "Thông báo",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4A004A)
-                )
-            }
 
             Spacer(Modifier.height(10.dp))
 

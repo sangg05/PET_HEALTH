@@ -1,5 +1,6 @@
     package com.example.pet_health.ui.screens
 
+    import BottomBar
     import android.icu.util.TimeUnit
     import android.net.Uri
     import androidx.compose.foundation.Image
@@ -65,21 +66,7 @@
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
                 )
             },
-            bottomBar = {
-                // Bottom bar giống PetListScreen
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .background(Color.White),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Home, "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
-                    Icon(Icons.Default.Notifications, "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                    Icon(Icons.Default.Person, "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                }
-            }
+            bottomBar = { BottomBar(navController = navController) }
         ) { padding ->
             Column(
                 modifier = Modifier

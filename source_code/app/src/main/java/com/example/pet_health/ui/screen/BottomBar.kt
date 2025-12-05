@@ -28,26 +28,25 @@ fun BottomBar(navController: NavController) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         BottomBarItem(Icons.Default.Home, "Home", "home", currentRoute) {
-            if (currentRoute != "home") navController.navigate("home") {
+            navController.navigate("home") {
+                popUpTo("home") { inclusive = true }
                 launchSingleTop = true
-                restoreState = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
             }
         }
 
         BottomBarItem(Icons.Default.Notifications, "Notifications", "notification", currentRoute) {
-            if (currentRoute != "notification") navController.navigate("notification") {
+            navController.navigate("notification") {
+                popUpTo("home") { saveState = true }
                 launchSingleTop = true
                 restoreState = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
             }
         }
 
         BottomBarItem(Icons.Default.Person, "Account", "account", currentRoute) {
-            if (currentRoute != "account") navController.navigate("account") {
+            navController.navigate("account") {
+                popUpTo("home") { saveState = true }
                 launchSingleTop = true
                 restoreState = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
             }
         }
     }

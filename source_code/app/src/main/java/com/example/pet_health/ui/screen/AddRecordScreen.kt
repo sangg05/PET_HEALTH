@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import BottomBar
 import android.app.DatePickerDialog
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -138,21 +139,8 @@ fun AddRecordScreen(navController: NavController) {
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
                 )
             },
-            bottomBar = {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .background(Color.White),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
-                    Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                    Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
-                }
-            }
-        ) { padding ->
+            bottomBar = { BottomBar(navController = navController) }
+        ){ padding ->
             Column(
                 modifier = Modifier
                     .background(Brush.verticalGradient(listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))))
