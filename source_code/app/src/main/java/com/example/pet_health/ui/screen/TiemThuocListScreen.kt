@@ -316,21 +316,6 @@ fun TiemThuocCard(
 
             Spacer(Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Text(
-                    "Tạo nhắc",
-                    color = Color(0xFFFF9100),
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp,
-                    modifier = Modifier.clickable {
-                        // TODO: Navigate to reminder with vaccineId
-                        navController?.navigate("reminder_form/${item.vaccineId}")
-                    }
-                )
-            }
         }
     }
 }

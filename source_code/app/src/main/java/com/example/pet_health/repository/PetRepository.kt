@@ -70,7 +70,7 @@ class UserRepository(private val context: Context) {
 
             user?.let {
                 withContext(Dispatchers.IO) {
-                    database.clearAllTables()
+//                    database.clearAllTables()
                     userDao.insertUser(it)
                     syncPetsFromFirebase(uid)
                     syncAllSymptomsForUser(uid)

@@ -222,24 +222,6 @@ fun RecordDetailScreen(
                             }
                         }
                     }
-
-                    // Nút tạo nhắc nhở
-                    Button(
-                        onClick = {
-                            // TODO: Navigate to reminder
-                            // navController.navigate("reminder_form/$vaccineId")
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9100)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "Tạo nhắc nhở",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
                 }
             }
         }

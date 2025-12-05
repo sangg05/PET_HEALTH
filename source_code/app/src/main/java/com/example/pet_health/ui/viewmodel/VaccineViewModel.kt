@@ -29,6 +29,15 @@ class VaccineViewModel(context: Context) : ViewModel() {
 
     init {
         refreshPets()
+        // ✅ Sync data từ Firestore khi khởi tạo ViewModel
+        syncFromFirestore()
+    }
+
+    // ✅ Sync vaccines từ Firestore về Room DB
+    fun syncFromFirestore() {
+        viewModelScope.launch {
+            repository.syncVaccinesFromFirestore()
+        }
     }
 
     // Refresh danh sách pet
@@ -46,7 +55,7 @@ class VaccineViewModel(context: Context) : ViewModel() {
     // Thêm vaccine mới
     fun addVaccine(vaccine: VaccineEntity) = viewModelScope.launch {
         repository.addVaccine(vaccine)
-        refreshPets() // Refresh nếu cần
+        refreshPets()
     }
 
     // Xóa vaccine
@@ -61,10 +70,12 @@ class VaccineViewModel(context: Context) : ViewModel() {
         refreshPets()
     }
 
-    // Lấy danh sách vaccine theo petId (nếu cần filter riêng)
+    // Lấy danh sách vaccine theo petId
     fun getVaccinesForPet(petId: String): List<VaccineEntity> {
         return vaccines.value.filter { it.petId == petId }
     }
+
+    // Upload ảnh vaccine
     fun uploadVaccineImage(context: Context, uri: Uri, userId: String, onResult: (String?) -> Unit) {
         viewModelScope.launch {
             val url = repository.uploadVaccineImage(context, uri, userId)
@@ -72,6 +83,7 @@ class VaccineViewModel(context: Context) : ViewModel() {
         }
     }
 }
+
 class VaccineViewModelFactory(
     private val context: Context
 ) : ViewModelProvider.Factory {
