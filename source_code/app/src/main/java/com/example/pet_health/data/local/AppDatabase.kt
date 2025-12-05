@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import pet_health.data.local.dao.*
 import com.example.pet_health.data.entity.*
+import com.example.pet_health.data.local.dao.NotificationDao
 import com.example.pet_health.data.local.dao.PetDao
 import com.example.pet_health.data.local.dao.SymptomLogDao
 
@@ -19,8 +20,9 @@ import com.example.pet_health.data.local.dao.SymptomLogDao
         VaccineEntity::class,
         UserActivityLogEntity::class,
         PetImageEntity::class,
+        NotificationEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,7 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userActivityLogDao(): UserActivityLogDao
     abstract fun petImageDao(): PetImageDao
     abstract fun symptomLogDao(): SymptomLogDao
-
+    abstract fun notificationDao(): NotificationDao
 
 
     companion object{

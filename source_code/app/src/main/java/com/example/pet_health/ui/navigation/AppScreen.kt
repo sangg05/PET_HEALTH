@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.navigation
 
+import android.app.Application
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +55,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 import pet_health.data.local.AppDatabase
+import com.example.pet_health.ui.viewmodel.NotificationViewModel
+import com.example.pet_health.data.repository.NotificationRepository
+import com.example.pet_health.ui.screen.ReminderDetailScreen
+import com.example.pet_health.ui.viewmodel.NotificationViewModelFactory
+import com.example.pet_health.ui.viewmodel.ReminderViewModel
+import com.example.pet_health.ui.viewmodel.ReminderViewModelFactory
 
 @Composable
 fun HealthRecordsNav(navController: NavController) {
@@ -94,6 +101,20 @@ fun AppScreen() {
     val healthTrackingViewModel: HealthTrackingViewModel = viewModel(
         key = "HealthTrackingVM",
         factory = HealthTrackingViewModelFactory(repository, Firebase.auth.currentUser?.uid ?: "")
+    )
+    // Reminder ViewModel
+    val reminderViewModel: ReminderViewModel = viewModel(
+        factory = ReminderViewModelFactory(context.applicationContext as Application)
+    )
+
+    // 🚀 Notification ViewModel (ĐÃ SỬA)
+    val notificationRepository = remember { NotificationRepository(database.notificationDao()) }
+
+    val notificationViewModel: NotificationViewModel = viewModel(
+        factory = NotificationViewModelFactory(
+            context.applicationContext as android.app.Application,
+            notificationRepository
+        )
     )
     NavHost(
         navController = navController,
@@ -270,10 +291,10 @@ fun AppScreen() {
                 TiemThuocListScreen(navController)
             }
 
-            // Thêm bản ghi mới
-            composable("add_record") {
-                AddRecordScreen(navController)
-            }
+//            // Thêm bản ghi mới
+//            composable("add_record") {
+//                AddRecordScreen(navController)
+//            }
             // Chỉnh sửa
             composable(
                 route = "edit_record/{vaccineId}",
@@ -325,9 +346,39 @@ fun AppScreen() {
             }
 
 
-//            composable("reminder") { ReminderScreen(navController) }
-            composable("reminder_form") { ReminderFormScreen(navController) }
+            composable("reminder") {
+                ReminderScreen(navController = navController, viewModel = reminderViewModel)
+            }
 
+            composable(
+                route = "reminder_form?reminderId={reminderId}",
+                arguments = listOf(
+                    navArgument("reminderId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val reminderId = backStackEntry.arguments?.getString("reminderId")
+                ReminderFormScreen(
+                    navController = navController,
+                    viewModel = reminderViewModel,
+                    reminderId = reminderId
+                )
+            }
+
+            composable(
+                route = "reminder_detail/{reminderId}",
+                arguments = listOf(navArgument("reminderId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val reminderId = backStackEntry.arguments?.getString("reminderId") ?: ""
+                ReminderDetailScreen(
+                    navController = navController,
+                    reminderId = reminderId,
+                    viewModel = reminderViewModel
+                )
+            }
             composable("health_dashboard") {
                 // Chỉ dùng viewModel đã tạo sẵn, không tạo lại
                 HealthTrackingScreen(
@@ -378,8 +429,33 @@ fun AppScreen() {
                     onNavigateLogin = { navController.popBackStack() }
                 )
             }
-            composable("add_record") { AddRecordScreen(navController) }
-            composable("note") { NotificationScreen(navController) }
+            composable("add_record") { backStackEntry ->
+
+                val context = LocalContext.current
+
+                val repository = remember {
+                    NotificationRepository(database.notificationDao())
+                }
+
+                val notificationViewModel: NotificationViewModel = viewModel(
+                    factory = NotificationViewModelFactory(
+                        context.applicationContext as Application,
+                        repository
+                    )
+                )
+
+                AddRecordScreen(
+                    navController = navController,
+                )
+            }
+
+            // 🚀 TRUYỀN VIEWMODEL (ĐÃ SỬA LỖI)
+            composable("notification") {
+                NotificationScreen(
+                    navController = navController,
+                    viewModel = notificationViewModel
+                )
+            }
         }
     }
 }

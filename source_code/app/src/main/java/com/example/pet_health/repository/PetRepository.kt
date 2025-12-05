@@ -63,27 +63,43 @@ class UserRepository(private val context: Context) {
     suspend fun loginUser(email: String, password: String): Pair<Boolean, String> {
         return try {
             auth.signInWithEmailAndPassword(email, password).await()
+
             val uid = auth.currentUser!!.uid
             val snapshot = firestore.collection("users").document(uid).get().await()
             val user = snapshot.toObject(UserEntity::class.java)
+
             user?.let {
                 withContext(Dispatchers.IO) {
-                    // Xóa dữ liệu user cũ trước
                     database.clearAllTables()
-
-                    // Lưu user mới
                     userDao.insertUser(it)
-
-                    // Sync pets của user mới
                     syncPetsFromFirebase(uid)
-
                     syncAllSymptomsForUser(uid)
                 }
                 currentUser.value = it
             }
             Pair(true, "Đăng nhập thành công")
+
         } catch (e: Exception) {
-            Pair(false, e.message ?: "Lỗi đăng nhập")
+
+            val errorMsg = when {
+                e.message?.contains("invalid", ignoreCase = true) == true &&
+                        e.message?.contains("password", ignoreCase = true) == true ->
+                    "Mật khẩu không đúng. Vui lòng thử lại."
+
+                e.message?.contains("no user record", ignoreCase = true) == true ->
+                    "Email không tồn tại trong hệ thống."
+
+                e.message?.contains("blocked", ignoreCase = true) == true ->
+                    "Thiết bị của bạn tạm thời bị chặn do hoạt động bất thường."
+
+                e.message?.contains("expired", ignoreCase = true) == true ||
+                        e.message?.contains("credential", ignoreCase = true) == true ->
+                    "Thông tin đăng nhập không hợp lệ.Vui lòng đăng nhập lại."
+
+                else -> "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
+            }
+
+            Pair(false, errorMsg)
         }
     }
     private suspend fun syncPetsFromFirebase(userId: String) {
