@@ -55,10 +55,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.pet_health.ui.screens.PetInputField
 import com.example.pet_health.ui.viewmodel.PetViewModel
 import java.util.Calendar
 
@@ -93,6 +95,12 @@ fun EditPetScreen(
             if (!initImageUri.isNullOrEmpty()) Uri.parse(initImageUri) else null
         )
     }
+    // Error states
+    var nameError by remember { mutableStateOf("") }
+    var typeError by remember { mutableStateOf("") }
+    var ageError by remember { mutableStateOf("") }
+    var weightError by remember { mutableStateOf("") }
+    var heightError by remember { mutableStateOf("") }
 
     // Lưu URL ảnh ban đầu để biết ảnh cũ
     val originalImageUrl = remember { initImageUri ?: "" }
@@ -173,30 +181,79 @@ fun EditPetScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Các trường nhập liệu
-            PetInputField(label = "Tên", value = name, onValueChange = { name = it })
+            PetInputField(
+                label = "Tên ",
+                value = name,
+                onValueChange = {
+                    name = it
+                    nameError = if (it.isEmpty()) "Tên không được để trống" else ""
+                },
+                errorMessage = nameError
+            )
+
+            PetInputField(
+                label = "Loài ",
+                value = type,
+                onValueChange = {
+                    type = it
+                    typeError = if (it.isEmpty()) "Loài không được để trống" else ""
+                },
+                errorMessage = typeError
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
-            PetInputField(label = "Loài", value = type, onValueChange = { type = it })
-            Spacer(modifier = Modifier.height(16.dp))
-
-            PetInputField(label = "Tuổi", value = age, onValueChange = { age = it })
+            PetInputField(
+                label = "Tuổi",
+                value = age,
+                onValueChange = {
+                    if (it.isEmpty() || (it.toIntOrNull() != null && it.toInt() in 0..50)) {
+                        age = it
+                        ageError = ""
+                    } else {
+                        ageError = "Tuổi phải từ 0-50"
+                    }
+                },
+                keyboardType = KeyboardType.Number,
+                errorMessage = ageError
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             PetInputField(label = "Màu sắc", value = color, onValueChange = { color = it })
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Cân nặng (0-200 kg)
                 PetInputField(
                     label = "Cân nặng (kg)",
                     value = weight,
-                    onValueChange = { weight = it },
-                    modifier = Modifier.weight(1f)
+                    onValueChange = {
+                        if (it.isEmpty() || (it.toDoubleOrNull() != null && it.toDouble() in 0.0..200.0)) {
+                            weight = it
+                            weightError = ""
+                        } else {
+                            weightError = "0-200kg"
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    keyboardType = KeyboardType.Decimal,
+                    errorMessage = weightError
                 )
+
+                // Kích thước (0-500 cm)
                 PetInputField(
                     label = "Kích thước (cm)",
                     value = height,
-                    onValueChange = { height = it },
-                    modifier = Modifier.weight(1f)
+                    onValueChange = {
+                        if (it.isEmpty() || (it.toDoubleOrNull() != null && it.toDouble() in 0.0..500.0)) {
+                            height = it
+                            heightError = ""
+                        } else {
+                            heightError = "0-500cm"
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    keyboardType = KeyboardType.Decimal,
+                    errorMessage = heightError
                 )
             }
 
@@ -282,7 +339,8 @@ fun PetInputField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     trailingIcon: ImageVector? = Icons.Default.Edit,
-    isDateField: Boolean = false
+    isDateField: Boolean = false,
+    errorMessage: String = ""
 ) {
     val context = LocalContext.current
 

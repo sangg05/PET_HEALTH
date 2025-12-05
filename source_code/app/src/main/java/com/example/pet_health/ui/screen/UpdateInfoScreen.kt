@@ -73,7 +73,7 @@ fun UpdateInfoScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF3CCE4))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
             )
         },
     ) { padding ->

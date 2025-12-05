@@ -1,5 +1,6 @@
 package com.example.pet_health.ui.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -79,7 +80,12 @@ fun ChangePasswordScreen(
                             contentDescription = "Toggle password"
                         )
                     }
-                }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp)
             )
 
             Spacer(Modifier.height(16.dp))
@@ -99,7 +105,12 @@ fun ChangePasswordScreen(
                             contentDescription = "Toggle password"
                         )
                     }
-                }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp)
             )
 
             Spacer(Modifier.height(16.dp))
@@ -119,7 +130,12 @@ fun ChangePasswordScreen(
                             contentDescription = "Toggle password"
                         )
                     }
-                }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp)
             )
 
             Spacer(Modifier.height(16.dp))

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewModelScope
@@ -47,7 +49,7 @@ fun HealthTrackingScreen(
 ) {
     val scrollState = rememberScrollState()
     val pets = petViewModel.pets.value
-    val selectedPet = viewModel.selectedPet // dùng trực tiếp ViewModel
+    val selectedPet = viewModel.selectedPet
 
     var showMetricForm by remember { mutableStateOf(false) }
     var newWeight by remember { mutableStateOf("") }
@@ -66,6 +68,7 @@ fun HealthTrackingScreen(
     LaunchedEffect(selectedPet?.petId) {
         selectedPet?.let { viewModel.syncSymptoms(it.petId) }
     }
+
 
     Scaffold(
         topBar = {
@@ -170,21 +173,120 @@ fun HealthTrackingScreen(
 
     // --- Metric Form ---
     if (showMetricForm) {
+        var weightError by remember { mutableStateOf("") }
+        var heightError by remember { mutableStateOf("") }
+
         MetricForm(
             weight = newWeight,
-            onWeightChange = { newWeight = it },
+            onWeightChange = { value ->
+                if (value.isEmpty()) {
+                    newWeight = value
+                    weightError = ""
+                } else {
+                    val floatValue = value.toFloatOrNull()
+                    when {
+                        floatValue == null -> {
+                            weightError = "Vui lòng nhập số hợp lệ"
+                        }
+                        floatValue < 0 -> {
+                            weightError = "Cân nặng không được âm"
+                        }
+                        floatValue > 200 -> {
+                            weightError = "Cân nặng tối đa 200kg"
+                        }
+                        else -> {
+                            newWeight = value
+                            weightError = ""
+                        }
+                    }
+                }
+            },
             height = newHeight,
-            onHeightChange = { newHeight = it },
-            onClose = { showMetricForm = false },
+            onHeightChange = { value ->
+                if (value.isEmpty()) {
+                    newHeight = value
+                    heightError = ""
+                } else {
+                    val floatValue = value.toFloatOrNull()
+                    when {
+                        floatValue == null -> {
+                            heightError = "Vui lòng nhập số hợp lệ"
+                        }
+                        floatValue < 0 -> {
+                            heightError = "Chiều cao không được âm"
+                        }
+                        floatValue > 500 -> {
+                            heightError = "Chiều cao tối đa 500cm"
+                        }
+                        else -> {
+                            newHeight = value
+                            heightError = ""
+                        }
+                    }
+                }
+            },
+            weightError = weightError,
+            heightError = heightError,
+            onClose = {
+                showMetricForm = false
+                weightError = ""
+                heightError = ""
+                newWeight = ""
+                newHeight = ""
+            },
             onSave = {
                 selectedPet?.let { pet ->
+                    val weightVal = newWeight.toFloatOrNull()
+                    val heightVal = newHeight.toFloatOrNull()
+
+                    // Validate trước khi lưu
+                    var hasError = false
+
+                    if (newWeight.isNotEmpty()) {
+                        when {
+                            weightVal == null -> {
+                                weightError = "Vui lòng nhập số hợp lệ"
+                                hasError = true
+                            }
+                            weightVal < 0 -> {
+                                weightError = "Cân nặng không được âm"
+                                hasError = true
+                            }
+                            weightVal > 200 -> {
+                                weightError = "Cân nặng tối đa 200kg"
+                                hasError = true
+                            }
+                        }
+                    }
+
+                    if (newHeight.isNotEmpty()) {
+                        when {
+                            heightVal == null -> {
+                                heightError = "Vui lòng nhập số hợp lệ"
+                                hasError = true
+                            }
+                            heightVal < 0 -> {
+                                heightError = "Chiều cao không được âm"
+                                hasError = true
+                            }
+                            heightVal > 500 -> {
+                                heightError = "Chiều cao tối đa 500cm"
+                                hasError = true
+                            }
+                        }
+                    }
+
                     val updatedPet = pet.copy(
-                        weightKg = newWeight.toFloatOrNull() ?: pet.weightKg,
-                        sizeCm = newHeight.toFloatOrNull() ?: pet.sizeCm
+                        weightKg = weightVal ?: pet.weightKg,
+                        sizeCm = heightVal ?: pet.sizeCm
                     )
+
                     viewModel.updatePet(updatedPet)
+
                     newWeight = ""
                     newHeight = ""
+                    weightError = ""
+                    heightError = ""
                     showMetricForm = false
                 }
             }
@@ -199,7 +301,7 @@ fun HealthTrackingScreen(
             desc = newSymptomDesc,
             onDescChange = { newSymptomDesc = it },
             onClose = { showSymptomForm = false },
-            viewModel = viewModel, // truyền viewModel vào
+            viewModel = viewModel,
             resetForm = {
                 newSymptomName = ""
                 newSymptomDesc = ""
@@ -208,6 +310,7 @@ fun HealthTrackingScreen(
         )
     }
 }
+
 // --- Composable Conventions ---
 @Composable
 fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
@@ -225,6 +328,7 @@ fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
         }
     }
 }
+
 @Composable
 fun PetFilterChips(
     petOptions: List<PetEntity?>,
@@ -269,6 +373,7 @@ fun PetFilterChips(
         }
     }
 }
+
 @Composable
 fun HealthMetricCard(
     value: String,
@@ -296,7 +401,7 @@ fun HealthMetricCard(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold,   color = Color.Black)
+            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 label,
@@ -310,16 +415,25 @@ fun HealthMetricCard(
 
 @Composable
 fun MetricForm(
-    weight: String, onWeightChange: (String) -> Unit,
-    height: String, onHeightChange: (String) -> Unit,
-    onClose: () -> Unit, onSave: () -> Unit
+    weight: String,
+    onWeightChange: (String) -> Unit,
+    height: String,
+    onHeightChange: (String) -> Unit,
+    weightError: String = "",
+    heightError: String = "",
+    onClose: () -> Unit,
+    onSave: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)).clickable { onClose() },
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable { onClose() },
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(0.8f)
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
                 .background(Color.White, RoundedCornerShape(16.dp))
                 .padding(20.dp)
                 .clickable(enabled = false) {}
@@ -327,27 +441,76 @@ fun MetricForm(
             Text("Cập nhật dữ liệu", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Cân nặng
             OutlinedTextField(
                 value = weight,
                 onValueChange = onWeightChange,
                 label = { Text("Cân nặng (kg)") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                isError = weightError.isNotEmpty(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = if (weightError.isNotEmpty()) Color.Red else Color(0xFFCE3CCB),
+                    unfocusedBorderColor = if (weightError.isNotEmpty()) Color.Red else Color.Gray,
+                    focusedLabelColor = if (weightError.isNotEmpty()) Color.Red else Color(0xFFCE3CCB),
+                    unfocusedLabelColor = if (weightError.isNotEmpty()) Color.Red else Color.Gray
+                )
             )
+            if (weightError.isNotEmpty()) {
+                Text(
+                    text = weightError,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
+
+            // Chiều cao
             OutlinedTextField(
                 value = height,
                 onValueChange = onHeightChange,
                 label = { Text("Chiều cao (cm)") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                isError = heightError.isNotEmpty(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = if (heightError.isNotEmpty()) Color.Red else Color(0xFFCE3CCB),
+                    unfocusedBorderColor = if (heightError.isNotEmpty()) Color.Red else Color.Gray,
+                    focusedLabelColor = if (heightError.isNotEmpty()) Color.Red else Color(0xFFCE3CCB),
+                    unfocusedLabelColor = if (heightError.isNotEmpty()) Color.Red else Color.Gray
+                )
             )
+            if (heightError.isNotEmpty()) {
+                Text(
+                    text = heightError,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onClose, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onClose,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                ) {
                     Text("Hủy", color = Color.Black)
                 }
-                Button(onClick = onSave, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD896D8))) {
+                Button(
+                    onClick = onSave,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD896D8))
+                ) {
                     Text("Lưu")
                 }
             }
@@ -425,9 +588,8 @@ fun SymptomForm(
                                 timestamp = System.currentTimeMillis()
                             )
 
-                            // gọi hàm saveSymptom của ViewModel
                             viewModel.saveSymptom(symptom) {
-                                resetForm() // reset form sau khi lưu xong
+                                resetForm()
                             }
                         }
                     },
@@ -440,6 +602,7 @@ fun SymptomForm(
         }
     }
 }
+
 @Composable
 fun SymptomItem(symptom: SymptomLogEntity, onDelete: (SymptomLogEntity) -> Unit) {
     Card(
@@ -459,7 +622,8 @@ fun SymptomItem(symptom: SymptomLogEntity, onDelete: (SymptomLogEntity) -> Unit)
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Tên triệu chứng: ${symptom.name}",                    fontWeight = FontWeight.Bold,
+                    text = "Tên triệu chứng: ${symptom.name}",
+                    fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = Color(0xFF6200EE)
                 )
@@ -486,4 +650,3 @@ fun SymptomItem(symptom: SymptomLogEntity, onDelete: (SymptomLogEntity) -> Unit)
         }
     }
 }
-

@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -49,6 +51,13 @@ fun AddPetScreen(
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Error states
+    var nameError by remember { mutableStateOf("") }
+    var typeError by remember { mutableStateOf("") }
+    var ageError by remember { mutableStateOf("") }
+    var weightError by remember { mutableStateOf("") }
+    var heightError by remember { mutableStateOf("") }
+
     val context = LocalContext.current
     val lightPink = Color(0xFFFFB3D9)
 
@@ -67,7 +76,7 @@ fun AddPetScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = com.example.pet_health.ui.screen.lightPink)
             )
         },
         bottomBar = { BottomBar(navController = navController) }
@@ -120,19 +129,90 @@ fun AddPetScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Các trường nhập liệu
-            PetInputField(label = "Tên", value = name, onValueChange = { name = it })
-            Spacer(modifier = Modifier.height(16.dp))
-            PetInputField(label = "Loài", value = type, onValueChange = { type = it })
-            Spacer(modifier = Modifier.height(16.dp))
-            PetInputField(label = "Tuổi", value = age, onValueChange = { age = it })
-            Spacer(modifier = Modifier.height(16.dp))
-            PetInputField(label = "Màu sắc", value = color, onValueChange = { color = it })
+            // Tên (bắt buộc)
+            PetInputField(
+                label = "Tên ",
+                value = name,
+                onValueChange = {
+                    name = it
+                    nameError = if (it.isEmpty()) "Tên không được để trống" else ""
+                },
+                errorMessage = nameError
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Loài (bắt buộc)
+            PetInputField(
+                label = "Loài ",
+                value = type,
+                onValueChange = {
+                    type = it
+                    typeError = if (it.isEmpty()) "Loài không được để trống" else ""
+                },
+                errorMessage = typeError
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Tuổi (chỉ số, 0-50)
+            PetInputField(
+                label = "Tuổi",
+                value = age,
+                onValueChange = {
+                    if (it.isEmpty() || (it.toIntOrNull() != null && it.toInt() in 0..50)) {
+                        age = it
+                        ageError = ""
+                    } else {
+                        ageError = "Tuổi phải từ 0-50"
+                    }
+                },
+                keyboardType = KeyboardType.Number,
+                errorMessage = ageError
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Màu sắc
+            PetInputField(
+                label = "Màu sắc",
+                value = color,
+                onValueChange = { color = it }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Cân nặng và Kích thước
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                PetInputField(label = "Cân nặng (kg)", value = weight, onValueChange = { weight = it }, modifier = Modifier.weight(1f))
-                PetInputField(label = "Kích thước (cm)", value = height, onValueChange = { height = it }, modifier = Modifier.weight(1f))
+                // Cân nặng (0-200 kg)
+                PetInputField(
+                    label = "Cân nặng (kg)",
+                    value = weight,
+                    onValueChange = {
+                        if (it.isEmpty() || (it.toDoubleOrNull() != null && it.toDouble() in 0.0..200.0)) {
+                            weight = it
+                            weightError = ""
+                        } else {
+                            weightError = "0-200kg"
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    keyboardType = KeyboardType.Decimal,
+                    errorMessage = weightError
+                )
+
+                // Kích thước (0-500 cm)
+                PetInputField(
+                    label = "Kích thước (cm)",
+                    value = height,
+                    onValueChange = {
+                        if (it.isEmpty() || (it.toDoubleOrNull() != null && it.toDouble() in 0.0..500.0)) {
+                            height = it
+                            heightError = ""
+                        } else {
+                            heightError = "0-500cm"
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    keyboardType = KeyboardType.Decimal,
+                    errorMessage = heightError
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -149,37 +229,50 @@ fun AddPetScreen(
 
             Button(
                 onClick = {
-                    if(name.isNotEmpty() && type.isNotEmpty()) {
-                        val birthDateMillis = if(age.isNotEmpty()) {
-                            val years = age.toIntOrNull() ?: 0
-                            Calendar.getInstance().apply { add(Calendar.YEAR, -years) }.timeInMillis
-                        } else 0L
+                    // Validate trước khi submit
+                    var hasError = false
 
-                        val adoptionTimestamp = if(adoptionDate.isNotEmpty()) {
-                            val parts = adoptionDate.split("/")
-                            if(parts.size == 3) Calendar.getInstance().apply {
-                                set(parts[2].toInt(), parts[1].toInt()-1, parts[0].toInt())
-                            }.timeInMillis else null
-                        } else null
+                    if (name.isEmpty()) {
+                        nameError = "Tên không được để trống"
+                        hasError = true
+                    }
+                    if (type.isEmpty()) {
+                        typeError = "Loài không được để trống"
+                        hasError = true
+                    }
 
-                        petViewModel.addOrUpdatePet(
-                            context = context,
-                            name = name,
-                            species = type,
-                            birthDate = birthDateMillis,
-                            color = color,
-                            weightKg = weight.toDoubleOrNull() ?: 0.0,
-                            sizeCm = height.toDoubleOrNull(),
-                            adoptionDate = adoptionTimestamp,
-                            imageUri = imageUri,
-                            existingImageUrl = null,
-                            editMode = false,
-                            petId = null
-                        ) {
-                            navController.popBackStack()
-                        }
-                    } else {
-                        Toast.makeText(context, "Tên và loài không được để trống", Toast.LENGTH_SHORT).show()
+                    if (hasError) {
+                        Toast.makeText(context, "Vui lòng điền đầy đủ thông tin bắt buộc", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    val birthDateMillis = if(age.isNotEmpty()) {
+                        val years = age.toIntOrNull() ?: 0
+                        Calendar.getInstance().apply { add(Calendar.YEAR, -years) }.timeInMillis
+                    } else 0L
+
+                    val adoptionTimestamp = if(adoptionDate.isNotEmpty()) {
+                        val parts = adoptionDate.split("/")
+                        if(parts.size == 3) Calendar.getInstance().apply {
+                            set(parts[2].toInt(), parts[1].toInt()-1, parts[0].toInt())
+                        }.timeInMillis else null
+                    } else null
+
+                    petViewModel.addOrUpdatePet(
+                        context = context,
+                        name = name,
+                        species = type,
+                        birthDate = birthDateMillis,
+                        color = color,
+                        weightKg = weight.toDoubleOrNull() ?: 0.0,
+                        sizeCm = height.toDoubleOrNull(),
+                        adoptionDate = adoptionTimestamp,
+                        imageUri = imageUri,
+                        existingImageUrl = null,
+                        editMode = false,
+                        petId = null
+                    ) {
+                        navController.popBackStack()
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF81F39F)),
@@ -201,7 +294,9 @@ fun PetInputField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     trailingIcon: ImageVector? = Icons.Default.Edit,
-    isDateField: Boolean = false
+    isDateField: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    errorMessage: String = ""
 ) {
     val context = LocalContext.current
     val calendar = remember { Calendar.getInstance() }
@@ -218,27 +313,40 @@ fun PetInputField(
         )
     }
 
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        readOnly = isDateField,
-        label = { Text(label, color = Color(0xFF6E6E6E), fontSize = 16.sp, fontWeight = FontWeight.Medium) },
-        modifier = modifier.fillMaxWidth(),
-        trailingIcon = trailingIcon?.let { icon ->
-            {
-                IconButton(onClick = { if(isDateField) datePickerDialog.show() }) {
-                    Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFCE3CCB))
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            readOnly = isDateField,
+            label = { Text(label, color = Color(0xFF6E6E6E), fontSize = 16.sp, fontWeight = FontWeight.Medium) },
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = trailingIcon?.let { icon ->
+                {
+                    IconButton(onClick = { if(isDateField) datePickerDialog.show() }) {
+                        Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFCE3CCB))
+                    }
                 }
-            }
-        },
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            unfocusedContainerColor = Color.White,
-            focusedContainerColor = Color.White,
-            focusedBorderColor = Color(0xFFCE3CCB),
-            unfocusedBorderColor = Color.Gray,
-            focusedLabelColor = Color(0xFFCE3CCB),
-            unfocusedLabelColor = Color(0xFF6E6E6E)
+            },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color.White,
+                focusedContainerColor = Color.White,
+                focusedBorderColor = if (errorMessage.isNotEmpty()) Color.Red else Color(0xFFCE3CCB),
+                unfocusedBorderColor = if (errorMessage.isNotEmpty()) Color.Red else Color.Gray,
+                focusedLabelColor = if (errorMessage.isNotEmpty()) Color.Red else Color(0xFFCE3CCB),
+                unfocusedLabelColor = if (errorMessage.isNotEmpty()) Color.Red else Color(0xFF6E6E6E)
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            isError = errorMessage.isNotEmpty()
         )
-    )
+
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
+    }
 }
