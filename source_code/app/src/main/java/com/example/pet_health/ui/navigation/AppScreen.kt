@@ -17,7 +17,6 @@ import androidx.navigation.navArgument
 //import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.ReminderFormScreen
 import com.example.pet_health.ui.screen.ReminderScreen
-import com.example.pet_health.ui.screen.TiemThuocListScreen
 import com.example.pet_health.ui.screen.WeightHeightScreen
 import com.example.pet_health.ui.screen.AddRecordScreen
 import com.example.pet_health.ui.screen.LoginScreen
@@ -32,11 +31,14 @@ import com.example.pet_health.repository.CloudinaryRepository
 import com.example.pet_health.ui.screen.AccountActionsScreen
 import com.example.pet_health.ui.screen.ChangePasswordScreen
 import com.example.pet_health.ui.screen.EditPetScreen
+import com.example.pet_health.ui.screen.EditRecordScreen
 import com.example.pet_health.ui.screen.ForgotPasswordScreen
 import com.example.pet_health.ui.screen.HealthTrackingScreen
 import com.example.pet_health.ui.screen.NotificationScreen
+import com.example.pet_health.ui.screen.RecordDetailScreen
 import com.example.pet_health.ui.screen.RegisterScreen
 import com.example.pet_health.ui.screen.ResetPasswordScreen
+import com.example.pet_health.ui.screen.TiemThuocListScreen
 import com.example.pet_health.ui.screen.UpdateInfoScreen
 import com.example.pet_health.ui.viewmodel.HealthRecordViewModel
 import com.example.pet_health.ui.viewmodel.HealthRecordViewModelFactory
@@ -257,10 +259,58 @@ fun AppScreen() {
                     healthRecordViewModel = healthRecordViewModel
                 )
             }
-            composable("health_records") {
-                val healthRecordViewModel: HealthRecordViewModel = viewModel(factory = HealthRecordViewModelFactory())
-                HealthRecordScreen(navController, petViewModel, healthRecordViewModel)
+//            composable("health_records") {
+//                val healthRecordViewModel: HealthRecordViewModel = viewModel(factory = HealthRecordViewModelFactory())
+//                HealthRecordScreen(navController, petViewModel, healthRecordViewModel)
+//            }
+
+
+            // Danh sách vaccine/thuốc
+            composable("medical_records") {
+                TiemThuocListScreen(navController)
             }
+
+            // Thêm bản ghi mới
+            composable("add_record") {
+                AddRecordScreen(navController)
+            }
+            // Chỉnh sửa
+            composable(
+                route = "edit_record/{vaccineId}",
+                arguments = listOf(
+                    navArgument("vaccineId") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val vaccineId = backStackEntry.arguments?.getString("vaccineId") ?: ""
+                EditRecordScreen(
+                    navController = navController,
+                    vaccineId = vaccineId
+                )
+            }
+            composable(
+                route = "record_detail/{vaccineId}",
+                arguments = listOf(navArgument("vaccineId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val vaccineId = backStackEntry.arguments?.getString("vaccineId") ?: ""
+                RecordDetailScreen(navController, vaccineId)
+            }
+
+//            composable(
+//                route = "reminder_form/{vaccineId}",
+//                arguments = listOf(
+//                    navArgument("vaccineId") {
+//                        type = NavType.StringType
+//                    }
+//                )
+//            ) { backStackEntry ->
+//                val vaccineId = backStackEntry.arguments?.getString("vaccineId") ?: ""
+//                ReminderFormScreen(
+//                    navController = navController,
+//                    vaccineId = vaccineId
+//                )
+//            }
 
             composable(
                 route = "add_health_record?petId={petId}",
@@ -275,7 +325,7 @@ fun AppScreen() {
             }
 
 
-            composable("reminder") { ReminderScreen(navController) }
+//            composable("reminder") { ReminderScreen(navController) }
             composable("reminder_form") { ReminderFormScreen(navController) }
 
             composable("health_dashboard") {
@@ -328,12 +378,12 @@ fun AppScreen() {
                     onNavigateLogin = { navController.popBackStack() }
                 )
             }
-            composable("medical_records") { TiemThuocListScreen(navController) }
             composable("add_record") { AddRecordScreen(navController) }
             composable("note") { NotificationScreen(navController) }
         }
     }
 }
+
 
 
 

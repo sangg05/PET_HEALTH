@@ -1,6 +1,4 @@
-
 package com.example.pet_health.ui.screen
-
 
 import android.app.DatePickerDialog
 import android.net.Uri
@@ -32,16 +30,34 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.pet_health.ui.screens.lightPink
+import com.example.pet_health.data.entity.VaccineEntity
+import com.example.pet_health.data.entity.PetEntity
+import com.example.pet_health.ui.viewmodel.VaccineViewModel
+import com.example.pet_health.ui.viewmodel.VaccineViewModelFactory
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddRecordScreen(navController: NavController) {
+    val context = LocalContext.current
+    val viewModel: VaccineViewModel = viewModel(
+        factory = VaccineViewModelFactory(context)
+    )
+    val petList by viewModel.pets
+
     var selectedType by remember { mutableStateOf("Tiêm") }
-    var petName by remember { mutableStateOf("") }
+    var selectedPetId by remember { mutableStateOf("") }
+    var showPetDropdown by remember { mutableStateOf(false) }
 
     var vaccineName by remember { mutableStateOf("") }
     var muiSo by remember { mutableStateOf("") }
@@ -56,20 +72,19 @@ fun AddRecordScreen(navController: NavController) {
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
-    var errorPetName by remember { mutableStateOf("") }
+    var errorPet by remember { mutableStateOf("") }
     var errorVaccineName by remember { mutableStateOf("") }
     var errorNgayTiem by remember { mutableStateOf("") }
     var errorCoSoTiem by remember { mutableStateOf("") }
     var errorTenThuoc by remember { mutableStateOf("") }
     var errorNgayBatDau by remember { mutableStateOf("") }
     var errorNgayKetThuc by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
 
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri -> imageUri = uri }
     )
-
-    val context = LocalContext.current
 
     fun openDatePicker(onDateSelected: (String) -> Unit) {
         val calendar = Calendar.getInstance()
@@ -84,6 +99,16 @@ fun AddRecordScreen(navController: NavController) {
         ).show()
     }
 
+    // Hàm convert date string sang timestamp
+    fun dateStringToTimestamp(dateStr: String): Long {
+        return try {
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            sdf.parse(dateStr)?.time ?: System.currentTimeMillis()
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
@@ -91,31 +116,23 @@ fun AddRecordScreen(navController: NavController) {
         focusedBorderColor = Color(0xFF7B1FA2),
         unfocusedBorderColor = Color.Gray
     )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        Color(0xFFFFDD00),
-                        Color(0xFFFFD6EC),
-                        Color(0xFFEAD6FF)
-                    )
+                    listOf(Color(0xFFFFDD00), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
                 )
             )
     ) {
         Scaffold(
             topBar = {
-                var backgroundColor = Color.Transparent
                 TopAppBar(
                     title = { Text("Thêm bản ghi", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.Black
-                            )
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
@@ -130,54 +147,53 @@ fun AddRecordScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.Home,
-                        contentDescription = "Trang chủ",
-                        tint = Color(0xFF6200EE),
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Hồ sơ",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
-                    )
+                    Icon(Icons.Default.Home, contentDescription = "Trang chủ", tint = Color(0xFF6200EE), modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color.LightGray, modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Person, contentDescription = "Hồ sơ", tint = Color.LightGray, modifier = Modifier.size(32.dp))
                 }
             }
-        )
-        { padding ->
+        ) { padding ->
             Column(
                 modifier = Modifier
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))
-                        )
-                    )
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFF6C2), Color(0xFFFFD6EC), Color(0xFFEAD6FF))))
                     .padding(padding)
                     .padding(10.dp)
                     .verticalScroll(rememberScrollState())
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.Top
             ) {
-                OutlinedTextField(
-                    value = petName,
-                    onValueChange = { petName = it; errorPetName = "" },
-                    label = { Text("Tên thú cưng") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors
-                )
-                if (errorPetName.isNotEmpty()) Text(
-                    errorPetName,
-                    color = Color.Red,
-                    fontSize = 12.sp
-                )
+                // Dropdown chọn pet
+                ExposedDropdownMenuBox(
+                    expanded = showPetDropdown,
+                    onExpandedChange = { showPetDropdown = it }
+                ) {
+                    OutlinedTextField(
+                        value = petList.find { it.petId == selectedPetId }?.name ?: "Chọn thú cưng",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Thú cưng") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showPetDropdown) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = fieldColors
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showPetDropdown,
+                        onDismissRequest = { showPetDropdown = false }
+                    ) {
+                        petList.forEach { pet ->
+                            DropdownMenuItem(
+                                text = { Text(pet.name) },
+                                onClick = {
+                                    selectedPetId = pet.petId
+                                    errorPet = ""
+                                    showPetDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+                if (errorPet.isNotEmpty()) Text(errorPet, color = Color.Red, fontSize = 12.sp)
 
                 Spacer(Modifier.height(16.dp))
 
@@ -223,24 +239,17 @@ fun AddRecordScreen(navController: NavController) {
                             colors = fieldColors
                         )
                     }
-                    if (errorVaccineName.isNotEmpty()) Text(
-                        errorVaccineName,
-                        color = Color.Red,
-                        fontSize = 12.sp
-                    )
+                    if (errorVaccineName.isNotEmpty()) Text(errorVaccineName, color = Color.Red, fontSize = 12.sp)
 
                     Spacer(Modifier.height(8.dp))
 
-                    // ✅ Fix DatePicker không mở
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) {
-                                openDatePicker { ngayTiem = it; errorNgayTiem = "" }
-                            }
+                            ) { openDatePicker { ngayTiem = it; errorNgayTiem = "" } }
                     ) {
                         OutlinedTextField(
                             value = ngayTiem,
@@ -253,11 +262,7 @@ fun AddRecordScreen(navController: NavController) {
                             colors = fieldColors
                         )
                     }
-                    if (errorNgayTiem.isNotEmpty()) Text(
-                        errorNgayTiem,
-                        color = Color.Red,
-                        fontSize = 12.sp
-                    )
+                    if (errorNgayTiem.isNotEmpty()) Text(errorNgayTiem, color = Color.Red, fontSize = 12.sp)
 
                     Spacer(Modifier.height(8.dp))
 
@@ -269,11 +274,7 @@ fun AddRecordScreen(navController: NavController) {
                         shape = RoundedCornerShape(12.dp),
                         colors = fieldColors
                     )
-                    if (errorCoSoTiem.isNotEmpty()) Text(
-                        errorCoSoTiem,
-                        color = Color.Red,
-                        fontSize = 12.sp
-                    )
+                    if (errorCoSoTiem.isNotEmpty()) Text(errorCoSoTiem, color = Color.Red, fontSize = 12.sp)
 
                     Spacer(Modifier.height(8.dp))
 
@@ -310,7 +311,6 @@ fun AddRecordScreen(navController: NavController) {
                     }
 
                 } else {
-                    // ✅ Fix DatePicker cho Thuốc
                     OutlinedTextField(
                         value = tenThuoc,
                         onValueChange = { tenThuoc = it; errorTenThuoc = "" },
@@ -319,11 +319,7 @@ fun AddRecordScreen(navController: NavController) {
                         shape = RoundedCornerShape(12.dp),
                         colors = fieldColors
                     )
-                    if (errorTenThuoc.isNotEmpty()) Text(
-                        errorTenThuoc,
-                        color = Color.Red,
-                        fontSize = 12.sp
-                    )
+                    if (errorTenThuoc.isNotEmpty()) Text(errorTenThuoc, color = Color.Red, fontSize = 12.sp)
 
                     Spacer(Modifier.height(8.dp))
 
@@ -337,9 +333,7 @@ fun AddRecordScreen(navController: NavController) {
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) {
-                                    openDatePicker { ngayBatDau = it; errorNgayBatDau = "" }
-                                }
+                                ) { openDatePicker { ngayBatDau = it; errorNgayBatDau = "" } }
                         ) {
                             OutlinedTextField(
                                 value = ngayBatDau,
@@ -359,9 +353,7 @@ fun AddRecordScreen(navController: NavController) {
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) {
-                                    openDatePicker { ngayKetThuc = it; errorNgayKetThuc = "" }
-                                }
+                                ) { openDatePicker { ngayKetThuc = it; errorNgayKetThuc = "" } }
                         ) {
                             OutlinedTextField(
                                 value = ngayKetThuc,
@@ -375,16 +367,8 @@ fun AddRecordScreen(navController: NavController) {
                             )
                         }
                     }
-                    if (errorNgayBatDau.isNotEmpty()) Text(
-                        errorNgayBatDau,
-                        color = Color.Red,
-                        fontSize = 12.sp
-                    )
-                    if (errorNgayKetThuc.isNotEmpty()) Text(
-                        errorNgayKetThuc,
-                        color = Color.Red,
-                        fontSize = 12.sp
-                    )
+                    if (errorNgayBatDau.isNotEmpty()) Text(errorNgayBatDau, color = Color.Red, fontSize = 12.sp)
+                    if (errorNgayKetThuc.isNotEmpty()) Text(errorNgayKetThuc, color = Color.Red, fontSize = 12.sp)
 
                     Spacer(Modifier.height(8.dp))
 
@@ -413,70 +397,58 @@ fun AddRecordScreen(navController: NavController) {
                     Button(
                         onClick = {
                             var valid = true
-                            if (petName.isBlank()) {
-                                errorPetName = "Vui lòng nhập tên thú cưng"; valid = false
+
+                            if (selectedPetId.isBlank()) {
+                                errorPet = "Vui lòng chọn thú cưng"
+                                valid = false
                             }
 
-                            if (selectedType == "Tiêm") {
-                                if (vaccineName.isBlank()) {
-                                    errorVaccineName = "Vui lòng nhập tên vắc-xin"; valid = false
-                                }
-                                if (ngayTiem.isBlank()) {
-                                    errorNgayTiem = "Vui lòng chọn ngày tiêm"; valid = false
-                                }
-                                if (coSoTiem.isBlank()) {
-                                    errorCoSoTiem = "Vui lòng nhập cơ sở tiêm"; valid = false
-                                }
-                            } else {
-                                if (tenThuoc.isBlank()) {
-                                    errorTenThuoc = "Vui lòng nhập tên thuốc"; valid = false
-                                }
-                                if (ngayBatDau.isBlank()) {
-                                    errorNgayBatDau = "Vui lòng chọn ngày bắt đầu"; valid = false
-                                }
-                                if (ngayKetThuc.isBlank()) {
-                                    errorNgayKetThuc = "Vui lòng chọn ngày kết thúc"; valid = false
-                                }
-                            }
+                            if (!valid) return@Button
 
-                            if (valid) {
-                                val route = if (selectedType == "Tiêm")
-                                    "record_detail/${encodeForNav(petName)}/${
-                                        encodeForNav(
-                                            selectedType
-                                        )
-                                    }/${encodeForNav(vaccineName)}/${encodeForNav(ngayTiem)}/${
-                                        encodeForNav(
-                                            ghiChuTiem
-                                        )
-                                    }"
-                                else
-                                    "record_detail/${encodeForNav(petName)}/${
-                                        encodeForNav(
-                                            selectedType
-                                        )
-                                    }/${encodeForNav(tenThuoc)}/${encodeForNav(ngayBatDau)}/${
-                                        encodeForNav(
-                                            ghiChuThuoc
-                                        )
-                                    }"
+                            // chạy upload + lưu bằng coroutine
+                            coroutineScope.launch {
 
-                                navController.navigate(route)
+                                // 1. Upload ảnh lên Cloudinary nếu có chọn ảnh
+                                val url = if (imageUri != null) {
+                                    suspendCancellableCoroutine<String?> { cont ->
+                                        viewModel.uploadVaccineImage(
+                                            context = context,
+                                            uri = imageUri!!,
+                                            userId = selectedPetId  // hoặc lấy userId thật
+                                        ) { result ->
+                                            cont.resume(result)
+                                        }
+                                    }
+                                } else null
+
+                                // 2. Tạo object vaccine
+                                val vaccine = VaccineEntity(
+                                    vaccineId = UUID.randomUUID().toString(),
+                                    petId = selectedPetId,
+                                    name = vaccineName,
+                                    date = dateStringToTimestamp(ngayTiem),
+                                    type = "Tiêm",
+                                    clinic = coSoTiem,
+                                    doseNumber = muiSo.toIntOrNull(),
+                                    endDate = null,
+                                    note = ghiChuTiem,
+                                    photoUrl = url,
+                                    createdAt = System.currentTimeMillis(),
+                                    nextDoseDate = null
+                                )
+
+                                // 3. Lưu vào DB
+                                viewModel.addVaccine(vaccine)
+
+                                navController.popBackStack()
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9CFF9C)),
-                        shape = RoundedCornerShape(20.dp)
-                    ) { Text("Lưu", color = Color.Black) }
+                        }
+                    ) {
+                        Text("Lưu")
+                    }
+
                 }
             }
         }
-    }
-}
-
-private fun encodeForNav(value: String): String {
-    return try {
-        java.net.URLEncoder.encode(value, "UTF-8")
-    } catch (e: Exception) {
-        ""
     }
 }

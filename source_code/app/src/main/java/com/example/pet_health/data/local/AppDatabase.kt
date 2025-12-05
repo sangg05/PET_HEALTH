@@ -20,7 +20,7 @@ import com.example.pet_health.data.local.dao.SymptomLogDao
         UserActivityLogEntity::class,
         PetImageEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
