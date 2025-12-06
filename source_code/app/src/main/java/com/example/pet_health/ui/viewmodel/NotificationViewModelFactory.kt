@@ -9,7 +9,6 @@ class NotificationViewModelFactory(
     private val application: Application,
     private val repository: NotificationRepository
 ) : ViewModelProvider.Factory {
-
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(NotificationViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

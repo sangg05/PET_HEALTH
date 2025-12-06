@@ -31,8 +31,10 @@ import com.example.pet_health.R
 import com.example.pet_health.data.repository.UserRepository
 import com.example.pet_health.ui.viewmodel.LoginViewModel
 import com.example.pet_health.ui.viewmodel.LoginViewModelFactory
+import com.example.pet_health.ui.viewmodel.PetViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 
@@ -42,6 +44,7 @@ fun LoginScreen(
     onLoginClick: (String, String) -> Unit,
     onNavigateRegister: () -> Unit,
     userRepository: UserRepository,
+    petViewModel: PetViewModel,
     onNavigateForgot: () -> Unit
 ) {
     val background = Color(0xFFF3CCE4)
@@ -59,6 +62,7 @@ fun LoginScreen(
     val email by viewModel.savedEmail
     val password by viewModel.savedPassword
     val rememberMe by viewModel.rememberMe
+
 
     Column(
         modifier = Modifier
@@ -187,8 +191,21 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                viewModel.onLogin(email, password, rememberMe)
-                onLoginClick(email, password)
+                scope.launch {
+                    val (success, message) = viewModel.login(email, password, rememberMe)
+
+                    if (success) {
+                        petViewModel.refreshPetsForCurrentUser()
+
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+                        navController.navigate("home") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    } else {
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    }
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()

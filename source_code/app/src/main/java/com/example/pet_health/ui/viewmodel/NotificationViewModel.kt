@@ -16,11 +16,22 @@ class NotificationViewModel(
 ) : AndroidViewModel(application) {
 
     val notifications = repo.getNotifications()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // SỐ LƯỢNG CHƯA ĐỌC
+    val unreadCount = repo.getUnreadCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun markAsRead(id: Int) {
         viewModelScope.launch {
             repo.markAsRead(id)
+        }
+    }
+
+    // SYNC TỪ FIREBASE
+    fun syncNotifications() {
+        viewModelScope.launch {
+            repo.syncFromFirebase()
         }
     }
 }

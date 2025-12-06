@@ -36,6 +36,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.pet_health.data.entity.VaccineEntity
 import com.example.pet_health.data.entity.PetEntity
+import com.example.pet_health.ui.viewmodel.NotificationViewModel
 import com.example.pet_health.ui.viewmodel.VaccineViewModel
 import com.example.pet_health.ui.viewmodel.VaccineViewModelFactory
 import kotlinx.coroutines.launch
@@ -49,7 +50,7 @@ import kotlin.coroutines.resume
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddRecordScreen(navController: NavController) {
+fun AddRecordScreen(navController: NavController, notificationViewModel: NotificationViewModel) {
     val context = LocalContext.current
     val viewModel: VaccineViewModel = viewModel(
         factory = VaccineViewModelFactory(context)

@@ -43,6 +43,43 @@ class PetViewModel(private val repository: PetRepository,private val cloudinaryR
         setupRealtimeListener()
         loadPets()
     }
+    fun refreshPetsForCurrentUser() {
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            _pets.value = emptyList()
+            _isLoading.value = false
+            return
+        }
+
+        // Remove listener cũ nếu có
+        listenerRegistration?.remove()
+
+        // Setup listener mới cho user hiện tại
+        setupRealtimeListener()
+
+        // Load pets từ Room + Firebase
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+
+                // Lấy từ Room trước (nhanh hơn)
+                val localPets = repository.getPetsByUserId(userId)
+                _pets.value = localPets
+
+                // Sync từ Firebase
+                val firebasePets = repository.getPetsFromFirebase()
+                if (firebasePets.isNotEmpty()) {
+                    firebasePets.forEach { repository.insertPet(it) }
+                    _pets.value = repository.getPetsByUserId(userId)
+                }
+
+                _isLoading.value = false
+            } catch (e: Exception) {
+                Log.e("PetViewModel", "Error refreshing pets", e)
+                _isLoading.value = false
+            }
+        }
+    }
     private fun setupRealtimeListener() {
         val userId = auth.currentUser?.uid ?: return
 

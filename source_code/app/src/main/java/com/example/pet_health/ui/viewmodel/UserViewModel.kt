@@ -75,12 +75,27 @@ class LoginViewModel(private val repository: UserRepository) : ViewModel() {
     var savedPassword = mutableStateOf(repository.getRememberedPassword() ?: "")
         private set
 
+    suspend fun login(email: String, password: String, remember: Boolean): Pair<Boolean, String> {
+        // Gọi hàm login từ repository
+        val (success, message) = repository.loginUser(email, password)
+
+        if (success) {
+            // Lưu thông tin remember me nếu thành công
+            if (remember) {
+                repository.setRememberMe(email, password, true)
+            } else {
+                repository.setRememberMe("", "", false)
+            }
+        }
+
+        return Pair(success, message)
+    }
     fun onLogin(email: String, password: String, remember: Boolean) {
         viewModelScope.launch {
             if (remember) {
                 repository.setRememberMe(email, password, true)
             } else {
-                repository.setRememberMe("", "", false) // xóa thông tin
+                repository.setRememberMe("", "", false)
             }
         }
     }

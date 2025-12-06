@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class NotificationEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-
+    val userId: String = "",
     val reminderId: String,
     val title: String,
     val message: String,

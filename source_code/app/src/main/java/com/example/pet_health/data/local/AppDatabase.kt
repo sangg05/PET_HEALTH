@@ -22,7 +22,7 @@ import com.example.pet_health.data.local.dao.SymptomLogDao
         PetImageEntity::class,
         NotificationEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

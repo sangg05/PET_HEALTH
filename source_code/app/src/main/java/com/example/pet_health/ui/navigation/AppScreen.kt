@@ -107,8 +107,9 @@ fun AppScreen() {
         factory = ReminderViewModelFactory(context.applicationContext as Application)
     )
 
+
     // 🚀 Notification ViewModel (ĐÃ SỬA)
-    val notificationRepository = remember { NotificationRepository(database.notificationDao()) }
+    val notificationRepository = remember { NotificationRepository(context) }
 
     val notificationViewModel: NotificationViewModel = viewModel(
         factory = NotificationViewModelFactory(
@@ -127,6 +128,7 @@ fun AppScreen() {
             composable("login") {
                 LoginScreen(
                     navController = navController,
+                    petViewModel = petViewModel,
                     userRepository = userRepository,
                     onLoginClick = { email, pass ->
                         scope.launch {
@@ -430,23 +432,10 @@ fun AppScreen() {
                     onNavigateLogin = { navController.popBackStack() }
                 )
             }
-            composable("add_record") { backStackEntry ->
-
-                val context = LocalContext.current
-
-                val repository = remember {
-                    NotificationRepository(database.notificationDao())
-                }
-
-                val notificationViewModel: NotificationViewModel = viewModel(
-                    factory = NotificationViewModelFactory(
-                        context.applicationContext as Application,
-                        repository
-                    )
-                )
-
+            composable("add_record") {
                 AddRecordScreen(
                     navController = navController,
+                    notificationViewModel = notificationViewModel // ✅ Dùng ViewModel đã tạo ở trên
                 )
             }
 

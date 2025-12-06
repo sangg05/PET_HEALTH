@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.pet_health.data.entity.NotificationEntity
 import com.example.pet_health.data.entity.PetEntity
 import com.example.pet_health.data.entity.SymptomLogEntity
 import com.example.pet_health.data.entity.UserEntity
@@ -70,10 +71,11 @@ class UserRepository(private val context: Context) {
 
             user?.let {
                 withContext(Dispatchers.IO) {
-//                    database.clearAllTables()
+                    database.clearAllTables()
                     userDao.insertUser(it)
                     syncPetsFromFirebase(uid)
                     syncAllSymptomsForUser(uid)
+                    syncNotificationsFromFirebase(uid)
                 }
                 currentUser.value = it
             }
@@ -102,6 +104,42 @@ class UserRepository(private val context: Context) {
             Pair(false, errorMsg)
         }
     }
+    private suspend fun syncNotificationsFromFirebase(userId: String) {
+        try {
+            val snapshot = firestore
+                .collection("users")
+                .document(userId)
+                .collection("notifications")
+                .get()
+                .await()
+
+            val notifications = snapshot.documents.mapNotNull { doc ->
+                try {
+                    NotificationEntity(
+                        id = doc.id.hashCode(),
+                        userId = userId,
+                        reminderId = doc.getString("reminderId") ?: "",
+                        title = doc.getString("title") ?: "",
+                        message = doc.getString("message") ?: "",
+                        timestamp = doc.getLong("timestamp") ?: 0L,
+                        isRead = doc.getBoolean("isRead") ?: false
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            notifications.forEach {
+                database.notificationDao().insert(it)
+            }
+
+            Log.d("UserRepository", "Synced ${notifications.size} notifications for user $userId")
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error syncing notifications", e)
+        }
+    }
+
+
     private suspend fun syncPetsFromFirebase(userId: String) {
         try {
             val petsSnapshot = firestore

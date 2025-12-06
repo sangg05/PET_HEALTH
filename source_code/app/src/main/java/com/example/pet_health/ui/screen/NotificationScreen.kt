@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -27,7 +28,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
-
 @Composable
 fun NotificationScreen(
     navController: NavController,
@@ -35,19 +35,24 @@ fun NotificationScreen(
 ) {
     val notifications by viewModel.notifications.collectAsState()
 
+    // ✅ SYNC NOTIFICATIONS KHI VÀO SCREEN
+    LaunchedEffect(Unit) {
+        viewModel.syncNotifications()
+    }
+
     Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Thông báo", fontWeight = FontWeight.Bold, color = Color.Black) },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
-                )
-            },
-            bottomBar = { BottomBar(navController = navController) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Thông báo", fontWeight = FontWeight.Bold, color = Color.Black) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightPink)
+            )
+        },
+        bottomBar = { BottomBar(navController = navController) }
     ) { paddingValues ->
 
         Column(
@@ -73,14 +78,15 @@ fun NotificationScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Chưa có thông báo nào.", color = Color.Gray)
+                    Text("Chưa có thông báo nào.", color = Color.Gray, fontSize = 16.sp)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(notifications, key = { it.id }) { noti ->
                         NotificationCardItem(
                             notification = noti,
-                            navController = navController
+                            navController = navController,
+                            viewModel = viewModel // ✅ TRUYỀN VIEWMODEL
                         )
                     }
                 }
@@ -92,7 +98,8 @@ fun NotificationScreen(
 @Composable
 fun NotificationCardItem(
     notification: NotificationEntity,
-    navController: NavController
+    navController: NavController,
+    viewModel: NotificationViewModel // ✅ THÊM THAM SỐ
 ) {
     val dateStr = SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault())
         .format(Date(notification.timestamp))
@@ -102,20 +109,39 @@ fun NotificationCardItem(
             .fillMaxWidth()
             .padding(vertical = 5.dp)
             .clickable {
+                // ✅ ĐÁNH DẤU ĐÃ ĐỌC
+                viewModel.markAsRead(notification.id)
+
                 // Mở màn hình chi tiết nhắc nhở
                 navController.navigate("reminder_detail/${notification.reminderId}")
             },
         shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = if (notification.isRead) Color.White else Color(0xFFFFE0F0) // ✅ Màu khác nếu chưa đọc
+        ),
         border = BorderStroke(1.dp, Color.Black)
     ) {
         Column(Modifier.padding(12.dp)) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("PetHealth - Nhắc nhở", fontWeight = FontWeight.Bold)
+                // ✅ THÊM DẤU CHẤM ĐỎ CHO THÔNG BÁO CHƯA ĐỌC
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("PetHealth - Nhắc nhở", fontWeight = FontWeight.Bold)
+
+                    if (!notification.isRead) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(Color.Red, shape = CircleShape)
+                        )
+                    }
+                }
+
                 Text(dateStr, fontSize = 12.sp, color = Color.Gray)
             }
 
@@ -124,7 +150,7 @@ fun NotificationCardItem(
             Text(
                 notification.title,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.Bold // ✅ Bold nếu chưa đọc
             )
 
             Spacer(Modifier.height(2.dp))
